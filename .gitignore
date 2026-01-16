@@ -13,6 +13,10 @@
 !/writable/uploads/
 !/writable/uploads/index.html
 
+# Ignore session files and logs
+/writable/session/ci_session*
+/writable/logs/*.log
+
 #--------------------------------------------------------------------
 # Environment Configuration
 #--------------------------------------------------------------------
