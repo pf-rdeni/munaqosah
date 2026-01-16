@@ -49,7 +49,7 @@ class SiswaModel extends Model
 
     // Aturan validasi
     protected $validationRules = [
-        'nisn'       => 'required|max_length[20]|is_unique[siswa.nisn,id,{id}]',
+        'nisn'       => 'required|max_length[20]|is_unique[tbl_munaqosah_siswa.nisn,id,{id}]',
         'nama_siswa' => 'required|max_length[100]',
         'jenis_kelamin' => 'required|in_list[L,P]',
     ];

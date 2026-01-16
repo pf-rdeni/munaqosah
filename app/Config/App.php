@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://localhost:8080/';
+    public $baseURL = 'http://localhost:8080/';
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -29,7 +29,7 @@ class App extends BaseConfig
      *
      * @var list<string>
      */
-    public array $allowedHostnames = [];
+    public $allowedHostnames = [];
 
     /**
      * --------------------------------------------------------------------------
@@ -40,7 +40,7 @@ class App extends BaseConfig
      * something else. If you have configured your web server to remove this file
      * from your site URIs, set this variable to an empty string.
      */
-    public string $indexPage = 'index.php';
+    public $indexPage = 'index.php';
 
     /**
      * --------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class App extends BaseConfig
      *
      * WARNING: If you set this to 'PATH_INFO', URIs will always be URL-decoded!
      */
-    public string $uriProtocol = 'REQUEST_URI';
+    public $uriProtocol = 'REQUEST_URI';
 
     /*
     |--------------------------------------------------------------------------
@@ -81,7 +81,7 @@ class App extends BaseConfig
     | DO NOT CHANGE THIS UNLESS YOU FULLY UNDERSTAND THE REPERCUSSIONS!!
     |
     */
-    public string $permittedURIChars = 'a-z 0-9~%.:_\-';
+    public $permittedURIChars = 'a-z 0-9~%.:_\-';
 
     /**
      * --------------------------------------------------------------------------
@@ -93,7 +93,7 @@ class App extends BaseConfig
      * strings (like currency markers, numbers, etc), that your program
      * should run under for this request.
      */
-    public string $defaultLocale = 'en';
+    public $defaultLocale = 'en';
 
     /**
      * --------------------------------------------------------------------------
@@ -105,7 +105,7 @@ class App extends BaseConfig
      *
      * If false, no automatic detection will be performed.
      */
-    public bool $negotiateLocale = false;
+    public $negotiateLocale = false;
 
     /**
      * --------------------------------------------------------------------------
@@ -120,7 +120,7 @@ class App extends BaseConfig
      *
      * @var list<string>
      */
-    public array $supportedLocales = ['en'];
+    public $supportedLocales = ['en'];
 
     /**
      * --------------------------------------------------------------------------
@@ -133,7 +133,7 @@ class App extends BaseConfig
      * @see https://www.php.net/manual/en/timezones.php for list of timezones
      *      supported by PHP.
      */
-    public string $appTimezone = 'Asia/Jakarta';
+    public $appTimezone = 'Asia/Jakarta';
 
     /**
      * --------------------------------------------------------------------------
@@ -145,7 +145,7 @@ class App extends BaseConfig
      *
      * @see http://php.net/htmlspecialchars for a list of supported charsets.
      */
-    public string $charset = 'UTF-8';
+    public $charset = 'UTF-8';
 
     /**
      * --------------------------------------------------------------------------
@@ -157,7 +157,7 @@ class App extends BaseConfig
      * secure, the user will be redirected to a secure version of the page
      * and the HTTP Strict Transport Security (HSTS) header will be set.
      */
-    public bool $forceGlobalSecureRequests = false;
+    public $forceGlobalSecureRequests = false;
 
     /**
      * --------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class App extends BaseConfig
      *
      * @var array<string, string>
      */
-    public array $proxyIPs = [];
+    public $proxyIPs = [];
 
     /**
      * --------------------------------------------------------------------------
@@ -198,5 +198,5 @@ class App extends BaseConfig
      * @see http://www.html5rocks.com/en/tutorials/security/content-security-policy/
      * @see http://www.w3.org/TR/CSP/
      */
-    public bool $CSPEnabled = false;
+    public $CSPEnabled = false;
 }

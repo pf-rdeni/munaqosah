@@ -48,7 +48,7 @@ class PesertaModel extends Model
     {
         $builder = $this->db->table($this->table . ' p');
         $builder->select('p.*, s.nama_siswa, s.jenis_kelamin, s.tanggal_lahir, s.foto');
-        $builder->join('siswa s', 's.nisn = p.nisn', 'left');
+        $builder->join('tbl_munaqosah_siswa s', 's.nisn = p.nisn', 'left');
 
         if ($id) {
             $builder->where('p.id', $id);

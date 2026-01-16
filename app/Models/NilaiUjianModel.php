@@ -48,9 +48,9 @@ class NilaiUjianModel extends Model
     {
         $builder = $this->db->table($this->table . ' n');
         $builder->select('n.*, s.nama_siswa, m.nama_materi, j.nama_juri');
-        $builder->join('siswa s', 's.nisn = n.nisn', 'left');
-        $builder->join('materi_ujian m', 'm.id = n.id_materi', 'left');
-        $builder->join('juri j', 'j.id_juri = n.id_juri', 'left');
+        $builder->join('tbl_munaqosah_siswa s', 's.nisn = n.nisn', 'left');
+        $builder->join('tbl_munaqosah_materi_ujian m', 'm.id = n.id_materi', 'left');
+        $builder->join('tbl_munaqosah_juri j', 'j.id_juri = n.id_juri', 'left');
 
         if ($id) {
             $builder->where('n.id', $id);
