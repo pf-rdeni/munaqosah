@@ -108,13 +108,21 @@ abstract class BaseController extends Controller
             return null;
         }
 
-        return [
+        $currentUser = [
             'id'       => $this->session->get('user_id'),
             'username' => $this->session->get('username'),
             'fullname' => $this->session->get('fullname'),
             'email'    => $this->session->get('email'),
             'groups'   => $this->session->get('groups') ?? [],
         ];
+
+        // Custom Display for Juri
+        if (in_array('juri', $currentUser['groups'])) {
+             // User requested: "Juri - [username]"
+             $currentUser['fullname'] = $currentUser['username'];
+        }
+
+        return $currentUser;
     }
 
     /**
@@ -143,5 +151,17 @@ abstract class BaseController extends Controller
     protected function setFlash(string $type, string $message): void
     {
         $this->session->setFlashdata($type, $message);
+    }
+
+    /**
+     * Get Tahun Ajaran Dynamic
+     * 
+     * @return string
+     */
+    protected function getTahunAjaran(): string
+    {
+        $bulan = (int)date('m');
+        $tahun = (int)date('Y');
+        return ($bulan >= 7) ? $tahun . '/' . ($tahun + 1) : ($tahun - 1) . '/' . $tahun;
     }
 }

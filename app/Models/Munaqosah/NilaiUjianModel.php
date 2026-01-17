@@ -30,6 +30,7 @@ class NilaiUjianModel extends Model
         'id_kriteria',
         'id_grup_materi',
         'id_grup_juri',
+        'objek_penilaian', // Surah No / Nama (Dynamic Item)
         'nilai',
         'catatan',
     ];
@@ -132,5 +133,20 @@ class NilaiUjianModel extends Model
                     ->where('id_juri', $idJuri)
                     ->where('id_materi', $idMateri)
                     ->countAllResults() > 0;
+    }
+
+    /**
+     * Ambil daftar peserta yang sudah dinilai oleh Juri tertentu (Distinct)
+     */
+    public function getPesertaDinilaiByJuri($idJuri, $tahunAjaran)
+    {
+        return $this->select('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn, MAX(tbl_munaqosah_nilai_ujian.created_at) as tgl_nilai, MAX(tbl_munaqosah_nilai_ujian.id_grup_materi) as id_grup_materi')
+                    ->join('tbl_munaqosah_peserta p', 'p.no_peserta = tbl_munaqosah_nilai_ujian.no_peserta AND p.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran', 'left')
+                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_nilai_ujian.nisn', 'left')
+                    ->where('tbl_munaqosah_nilai_ujian.id_juri', $idJuri)
+                    ->where('tbl_munaqosah_nilai_ujian.tahun_ajaran', $tahunAjaran)
+                    ->groupBy('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn')
+                    ->orderBy('tgl_nilai', 'DESC')
+                    ->findAll();
     }
 }

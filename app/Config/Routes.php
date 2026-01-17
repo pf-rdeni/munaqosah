@@ -61,6 +61,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->get('juri/getJuriKriteria/(:num)', 'Munaqosah\Juri::getJuriKriteria/$1');
     $routes->post('juri/saveJuriKriteria', 'Munaqosah\Juri::saveJuriKriteria');
     $routes->get('juri/generateUsername/(:num)', 'Munaqosah\Juri::generateUsername/$1');
+    $routes->post('juri/updateGrupJuri', 'Munaqosah\Juri::updateGrupJuri');
 
     // Manajemen Grup Materi
     $routes->get('grup-materi', 'Munaqosah\GrupMateri::index');
@@ -83,4 +84,18 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('kriteria/store/(:num)', 'Munaqosah\Kriteria::store/$1');
     $routes->post('kriteria/update/(:num)', 'Munaqosah\Kriteria::update/$1');
     $routes->get('kriteria/delete/(:num)', 'Munaqosah\Kriteria::delete/$1');
+
+    // Registrasi Peserta (Undian No Tes)
+    $routes->get('peserta', 'Munaqosah\Peserta::index');
+    $routes->post('peserta/undian', 'Munaqosah\Peserta::undian');
+    $routes->post('peserta/reset', 'Munaqosah\Peserta::reset');
+    $routes->post('peserta/saveSettings', 'Munaqosah\Peserta::saveSettings');
+    $routes->post('peserta/saveTahfidzPilihan', 'Munaqosah\Peserta::saveTahfidzPilihan');
+
+    // Input Nilai (Juri)
+    $routes->get('munaqosah/input-nilai', 'Munaqosah\InputNilai::index');
+    $routes->post('munaqosah/input-nilai/load-form', 'Munaqosah\InputNilai::loadForm');
+    $routes->post('munaqosah/input-nilai/save', 'Munaqosah\InputNilai::save');
+    $routes->post('munaqosah/input-nilai/authorize-edit', 'Munaqosah\InputNilai::authorizeEdit');
+    $routes->post('munaqosah/input-nilai/refresh-history', 'Munaqosah\InputNilai::refreshHistory');
 });

@@ -29,6 +29,7 @@
                         <tr>
                             <th width="5%">No</th>
                             <th>Nama Juri</th>
+                            <th>Grup Juri</th>
                             <th>Materi Ujian</th>
                             <th>Kriteria</th>
                             <th width="12%" class="text-center">Aksi</th>
@@ -41,6 +42,27 @@
                                 <td>
                                     <strong><?= esc($juri['nama_juri']) ?></strong><br>
                                     <code class="text-muted"><?= esc($juri['username']) ?></code>
+                                </td>
+                                <td>
+                                    <?php 
+                                        $grupId = $juri['id_grup_juri'] ?? 0;
+                                        $badges = [
+                                            0 => 'badge-secondary',
+                                            1 => 'badge-primary',
+                                            2 => 'badge-success',
+                                            3 => 'badge-danger',
+                                            4 => 'badge-warning',
+                                            5 => 'badge-info',
+                                            6 => 'badge-indigo',
+                                            7 => 'badge-lightblue',
+                                            8 => 'badge-navy',
+                                            9 => 'badge-purple',
+                                            10 => 'badge-pink'
+                                        ];
+                                        $badgeClass = $badges[$grupId] ?? 'badge-secondary';
+                                        $grupName = ($grupId > 0) ? "Grup $grupId" : "-";
+                                    ?>
+                                    <span class="badge <?= $badgeClass ?>" style="font-size: 1em;"><?= $grupName ?></span>
                                 </td>
                                 <td>
                                     <span class="badge badge-info"><?= esc($juri['nama_grup_materi'] ?? '-') ?></span>
@@ -64,6 +86,13 @@
                                             data-nama="<?= esc($juri['nama_juri']) ?>"
                                             title="Setting Kriteria">
                                         <i class="fas fa-cog"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-xs btn-set-grup"
+                                            data-id="<?= $juri['id'] ?>"
+                                            data-nama="<?= esc($juri['nama_juri']) ?>"
+                                            data-grup="<?= $juri['id_grup_juri'] ?? 0 ?>"
+                                            title="Setting Grup Juri">
+                                        <i class="fas fa-users"></i>
                                     </button>
                                     <button type="button" class="btn btn-secondary btn-xs" onclick="confirmReset('<?= base_url('backend/juri/reset-password/' . $juri['id']) ?>')" title="Reset Password">
                                         <i class="fas fa-key"></i>
@@ -130,6 +159,47 @@
     </div>
 </div>
 
+<!-- Modal Setting Grup Juri -->
+<div class="modal fade" id="modalSetGrupJuri" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-users"></i> Set Grup Juri</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formSetGrupJuri">
+                <div class="modal-body">
+                    <input type="hidden" name="juri_id" id="grupJuriId">
+                    
+                    <div class="alert alert-info py-2 px-3 mb-3">
+                        <small>Juri:</small><br>
+                        <strong id="grupJuriNama"></strong>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Pilih Grup Juri (1-10)</label>
+                        <select class="form-control" name="id_grup_juri" id="idGrupJuriSelect">
+                            <option value="0">- Pilih Grup -</option>
+                            <?php for($i=1; $i<=10; $i++): ?>
+                                <option value="<?= $i ?>">Grup <?= $i ?></option>
+                            <?php endfor; ?>
+                        </select>
+                        <small class="text-muted">Grup ini digunakan untuk logika giliran/statistik.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection(); ?>
 
 <?= $this->section('scripts'); ?>
@@ -138,6 +208,50 @@
         $('#tabelJuri').DataTable({
             responsive: true,
             autoWidth: false,
+        });
+
+        // ==================== GRUP JURI LOGIC ====================
+        $(document).on('click', '.btn-set-grup', function() {
+            var id = $(this).data('id');
+            var nama = $(this).data('nama');
+            var grup = $(this).data('grup'); // 0 if null
+
+            $('#grupJuriId').val(id);
+            $('#grupJuriNama').text(nama);
+            $('#idGrupJuriSelect').val(grup);
+            
+            $('#modalSetGrupJuri').modal('show');
+        });
+
+        $('#formSetGrupJuri').submit(function(e) {
+            e.preventDefault();
+            var btn = $(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                url: '<?= base_url('backend/juri/updateGrupJuri') ?>',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(res) {
+                    if(res.success) {
+                        $('#modalSetGrupJuri').modal('hide');
+                        Swal.fire({
+                            icon: 'success', 
+                            title: 'Sukses', 
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Gagal', res.message, 'error');
+                        btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Terjadi kesalahan sistem', 'error');
+                    btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+                }
+            });
         });
     });
 

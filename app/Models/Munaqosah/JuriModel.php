@@ -19,6 +19,7 @@ class JuriModel extends Model
         'nama_juri',
         'id_grup_materi', // Changed from id_materi
         'id_juri', // Legacy ID column if needed
+        'id_grup_juri', // Group Juri Assignment (1-10)
         'username' // The legacy table has username column too, we should sync it or ignore
     ];
 

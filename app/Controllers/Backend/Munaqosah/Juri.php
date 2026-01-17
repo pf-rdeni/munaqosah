@@ -499,4 +499,32 @@ class Juri extends BaseController
             'nama_juri' => 'Juri ' . $grupMateri['nama_grup_materi']
         ]);
     }
+
+    /**
+     * AJAX: Update Juri Group ID (1-10)
+     */
+    public function updateGrupJuri()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $juriId = $this->request->getPost('juri_id');
+        $idGrupJuri = $this->request->getPost('id_grup_juri');
+
+        if (!$juriId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Data Juri invalid']);
+        }
+
+        if (!is_numeric($idGrupJuri) || $idGrupJuri < 1 || $idGrupJuri > 10) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Grup Juri harus antara 1-10']);
+        }
+
+        $this->juriModel->update($juriId, ['id_grup_juri' => $idGrupJuri]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Grup Juri berhasil diupdate.'
+        ]);
+    }
 }

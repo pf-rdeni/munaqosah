@@ -42,3 +42,4 @@ Thumbs.db
 # Testing
 #--------------------------------------------------------------------
 /tests/_support/_generated/
+writable/logs/log*

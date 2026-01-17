@@ -26,6 +26,7 @@ class PesertaModel extends Model
         'no_peserta',
         'tahun_ajaran',
         'status',
+        'surah',
     ];
 
     protected $useTimestamps = true;
@@ -109,5 +110,22 @@ class PesertaModel extends Model
         }
 
         return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+
+    /**
+     * Ambil detail peserta by No Peserta & Tahun Ajaran
+     * 
+     * @param string $noPeserta
+     * @param string $tahunAjaran
+     * @return array|null
+     */
+    public function getPesertaDetail($noPeserta, $tahunAjaran)
+    {
+        return $this->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.nisn, s.foto, s.hafalan')
+                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'left')
+                    ->where('tbl_munaqosah_peserta.no_peserta', $noPeserta)
+                    ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
+                    ->first();
     }
 }
