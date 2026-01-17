@@ -3,7 +3,6 @@
 #--------------------------------------------------------------------
 /vendor/
 /node_modules/
-/writable/*
 !/writable/cache/
 !/writable/cache/index.html
 !/writable/logs/
@@ -14,8 +13,9 @@
 !/writable/uploads/index.html
 
 # Ignore session files and logs
-/writable/session/ci_session*
-/writable/logs/*.log
+/writable/session/*
+/public/writable/uploads/*
+/writable/*
 
 #--------------------------------------------------------------------
 # Environment Configuration

@@ -10,24 +10,33 @@
  * @author     SDIT An-Nahl
  */
 
-namespace App\Controllers\Backend;
+namespace App\Controllers\Backend\Munaqosah;
 
 use App\Controllers\BaseController;
-use App\Models\SiswaModel;
-use App\Models\PesertaModel;
-use App\Models\NilaiUjianModel;
+use App\Models\Munaqosah\SiswaModel;
+use App\Models\Munaqosah\PesertaModel;
+use App\Models\Munaqosah\NilaiUjianModel;
+use App\Models\Munaqosah\MateriModel;
+use App\Models\Munaqosah\GrupMateriModel;
+use App\Models\Munaqosah\KriteriaModel;
 
 class Dashboard extends BaseController
 {
     protected $siswaModel;
     protected $pesertaModel;
     protected $nilaiModel;
+    protected $materiModel;
+    protected $grupMateriModel;
+    protected $kriteriaModel;
 
     public function __construct()
     {
-        $this->siswaModel   = new SiswaModel();
-        $this->pesertaModel = new PesertaModel();
-        $this->nilaiModel   = new NilaiUjianModel();
+        $this->siswaModel      = new SiswaModel();
+        $this->pesertaModel    = new PesertaModel();
+        $this->nilaiModel      = new NilaiUjianModel();
+        $this->materiModel     = new MateriModel();
+        $this->grupMateriModel = new GrupMateriModel();
+        $this->kriteriaModel   = new KriteriaModel();
     }
 
     /**
@@ -54,10 +63,13 @@ class Dashboard extends BaseController
             ],
             'user'         => $this->getCurrentUser(),
             'statistik'    => [
-                'totalSiswa'     => $this->siswaModel->countSiswaByStatus('aktif'),
-                'totalPeserta'   => $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->countAllResults(),
-                'pesertaDinilai' => $this->nilaiModel->countPesertaDinilai($tahunAjaran),
-                'tahunAjaran'    => $tahunAjaran,
+                'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif'),
+                'totalPeserta'    => $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->countAllResults(),
+                'pesertaDinilai'  => $this->nilaiModel->countPesertaDinilai($tahunAjaran),
+                'totalMateri'     => $this->materiModel->countAllResults(),
+                'totalGrupMateri' => $this->grupMateriModel->countAllResults(),
+                'totalKriteria'   => $this->kriteriaModel->countAllResults(),
+                'tahunAjaran'     => $tahunAjaran,
             ],
         ];
 

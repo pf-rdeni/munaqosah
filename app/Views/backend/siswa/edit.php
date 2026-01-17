@@ -1,23 +1,27 @@
 <?= $this->extend('backend/template/template'); ?>
 
 <?= $this->section('content'); ?>
-<!-- Halaman Form Tambah Siswa -->
+<!-- Halaman Form Edit Siswa -->
 <!-- Cropper CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    .img-container img {
+        max-width: 100%;
+    }
+</style>
 
 <div class="row">
     <div class="col-md-8 offset-md-2">
-        <div class="card card-primary">
+        <div class="card card-warning">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-user-plus mr-2"></i>
-                    Form Tambah Siswa Baru
+                    <i class="fas fa-user-edit mr-2"></i>
+                    Edit Data Siswa
                 </h3>
             </div>
             
-            <form action="<?= base_url('backend/siswa/store') ?>" method="post">
+            <form action="<?= base_url('backend/siswa/update/' . $siswa['id']) ?>" method="post">
                 <?= csrf_field() ?>
-                <input type="hidden" id="foto_base64" name="foto_base64" value="">
                 
                 <div class="card-body">
                     <!-- Alert Validasi Error -->
@@ -30,29 +34,37 @@
                                     <li><?= esc($error) ?></li>
                                 <?php endforeach; ?>
                             </ul>
-                        </div>
                     <?php endif; ?>
 
                     <!-- Foto Profil -->
                     <div class="text-center mb-4">
+                        <?php 
+                        $fotoUrl = (!empty($siswa['foto']) && file_exists(FCPATH . $siswa['foto'])) 
+                            ? base_url($siswa['foto']) . '?t=' . time() 
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($siswa['nama_siswa']) . '&background=random&size=200';
+                        ?>
                         <img id="previewPhoto" 
-                             src="https://ui-avatars.com/api/?name=Siswa+Baru&background=random&size=200" 
+                             src="<?= $fotoUrl ?>" 
                              class="profile-user-img img-fluid"
-                             style="width: 150px; height: 200px; object-fit: cover; border: 3px solid #adb5bd; border-radius: 10px;">
+                             style="width: 150px; height: 200px; object-fit: cover; border: 3px solid #adb5bd; border-radius: 10px;"
+                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=<?= urlencode($siswa['nama_siswa']) ?>&background=random&size=200'">
                         
                         <div class="mt-3">
+                            <button type="button" class="btn btn-warning btn-sm" id="btnEditFoto">
+                                <i class="fas fa-edit mr-1"></i> Edit Foto
+                            </button>
                             <button type="button" class="btn btn-primary btn-sm" id="btnUploadFoto">
-                                <i class="fas fa-upload mr-1"></i> Upload Foto
+                                <i class="fas fa-upload mr-1"></i> Upload Foto Baru
                             </button>
                             <input type="file" id="inputPhoto" accept="image/png, image/jpeg, image/jpg" style="display: none;">
                         </div>
-                        <small class="text-muted mt-2 d-block">Crop otomatis rasio 3:4 (Opsional)</small>
+                        <small class="text-muted mt-2 d-block">Crop otomatis rasio 3:4</small>
                     </div>
                     
                     <hr>
                     
                     <!-- Data Identitas -->
-                    <h5 class="text-primary mb-3">
+                    <h5 class="text-warning mb-3">
                         <i class="fas fa-id-card mr-2"></i>
                         Data Identitas
                     </h5>
@@ -62,15 +74,15 @@
                             <div class="form-group">
                                 <label for="nisn">NISN <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nisn" name="nisn" 
-                                       value="<?= old('nisn') ?>" placeholder="Masukkan NISN" required>
-                                <small class="form-text text-muted">Nomor Induk Siswa Nasional</small>
+                                       value="<?= old('nisn', $siswa['nisn']) ?>" placeholder="Masukkan NISN" disabled>
+                                <small class="form-text text-muted">NISN tidak dapat diubah (Primary Key)</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="nama_siswa">Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nama_siswa" name="nama_siswa" 
-                                       value="<?= old('nama_siswa') ?>" placeholder="Masukkan nama lengkap" required>
+                                       value="<?= old('nama_siswa', $siswa['nama_siswa']) ?>" placeholder="Masukkan nama lengkap" required>
                             </div>
                         </div>
                     </div>
@@ -81,8 +93,8 @@
                                 <label for="jenis_kelamin">Jenis Kelamin <span class="text-danger">*</span></label>
                                 <select class="form-control" id="jenis_kelamin" name="jenis_kelamin" required>
                                     <option value="">-- Pilih --</option>
-                                    <option value="L" <?= old('jenis_kelamin') == 'L' ? 'selected' : '' ?>>Laki-laki</option>
-                                    <option value="P" <?= old('jenis_kelamin') == 'P' ? 'selected' : '' ?>>Perempuan</option>
+                                    <option value="L" <?= old('jenis_kelamin', $siswa['jenis_kelamin']) == 'L' ? 'selected' : '' ?>>Laki-laki</option>
+                                    <option value="P" <?= old('jenis_kelamin', $siswa['jenis_kelamin']) == 'P' ? 'selected' : '' ?>>Perempuan</option>
                                 </select>
                             </div>
                         </div>
@@ -90,14 +102,14 @@
                             <div class="form-group">
                                 <label for="tempat_lahir">Tempat Lahir</label>
                                 <input type="text" class="form-control" id="tempat_lahir" name="tempat_lahir" 
-                                       value="<?= old('tempat_lahir') ?>" placeholder="Kota/Kabupaten">
+                                       value="<?= old('tempat_lahir', $siswa['tempat_lahir']) ?>" placeholder="Kota/Kabupaten">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="tanggal_lahir">Tanggal Lahir</label>
                                 <input type="date" class="form-control" id="tanggal_lahir" name="tanggal_lahir" 
-                                       value="<?= old('tanggal_lahir') ?>">
+                                       value="<?= old('tanggal_lahir', $siswa['tanggal_lahir']) ?>">
                             </div>
                         </div>
                     </div>
@@ -105,7 +117,7 @@
                     <hr>
                     
                     <!-- Data Orang Tua -->
-                    <h5 class="text-primary mb-3">
+                    <h5 class="text-warning mb-3">
                         <i class="fas fa-users mr-2"></i>
                         Data Orang Tua
                     </h5>
@@ -115,14 +127,14 @@
                             <div class="form-group">
                                 <label for="nama_ayah">Nama Ayah</label>
                                 <input type="text" class="form-control" id="nama_ayah" name="nama_ayah" 
-                                       value="<?= old('nama_ayah') ?>" placeholder="Nama lengkap ayah">
+                                       value="<?= old('nama_ayah', $siswa['nama_ayah']) ?>" placeholder="Nama lengkap ayah">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="nama_ibu">Nama Ibu</label>
                                 <input type="text" class="form-control" id="nama_ibu" name="nama_ibu" 
-                                       value="<?= old('nama_ibu') ?>" placeholder="Nama lengkap ibu">
+                                       value="<?= old('nama_ibu', $siswa['nama_ibu']) ?>" placeholder="Nama lengkap ibu">
                             </div>
                         </div>
                     </div>
@@ -130,14 +142,32 @@
                     <div class="form-group">
                         <label for="alamat">Alamat Lengkap</label>
                         <textarea class="form-control" id="alamat" name="alamat" rows="3" 
-                                  placeholder="Masukkan alamat lengkap"><?= old('alamat') ?></textarea>
+                                  placeholder="Masukkan alamat lengkap"><?= old('alamat', $siswa['alamat']) ?></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="no_hp">No HP / WhatsApp (Opsional)</label>
                         <input type="text" class="form-control" id="no_hp" name="no_hp" 
-                               value="<?= old('no_hp') ?>" placeholder="08xxxxxxxxxx">
+                               value="<?= old('no_hp', $siswa['no_hp'] ?? '') ?>" placeholder="08xxxxxxxxxx">
                     </div>
+
+                    <hr>
+
+                    <!-- Status -->
+                    <h5 class="text-warning mb-3">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Status Akademik
+                    </h5>
+                    <div class="form-group">
+                        <label for="status">Status Siswa</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="aktif" <?= old('status', $siswa['status']) == 'aktif' ? 'selected' : '' ?>>Aktif</option>
+                            <option value="nonaktif" <?= old('status', $siswa['status']) == 'nonaktif' ? 'selected' : '' ?>>Non-Aktif</option>
+                            <option value="lulus" <?= old('status', $siswa['status']) == 'lulus' ? 'selected' : '' ?>>Lulus</option>
+                            <option value="pindah" <?= old('status', $siswa['status']) == 'pindah' ? 'selected' : '' ?>>Pindah</option>
+                        </select>
+                    </div>
+
                 </div>
                 
                 <div class="card-footer">
@@ -145,8 +175,8 @@
                         <a href="<?= base_url('backend/siswa') ?>" class="btn btn-secondary">
                             <i class="fas fa-arrow-left mr-1"></i> Kembali
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save mr-1"></i> Simpan
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save mr-1"></i> Perbarui
                         </button>
                     </div>
                 </div>
@@ -212,7 +242,7 @@
                     <i class="fas fa-times"></i> Batal
                 </button>
                 <button type="button" class="btn btn-primary" id="cropBtn">
-                    <i class="fas fa-check"></i> Gunakan Foto
+                    <i class="fas fa-check"></i> Simpan Foto
                 </button>
             </div>
         </div>
@@ -244,13 +274,22 @@
 <?= $this->section('scripts'); ?>
 <!-- Cropper JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<!-- Image Helper -->
+<script src="<?= base_url('js/image-upload-helper.js') ?>"></script>
 
 <script>
     var bs_modal = $('#modalCrop');
     var image = document.getElementById('image-to-crop');
     var cropper = null;
 
-    // Upload Foto Button
+    // Edit Foto Button - Crop existing photo
+    $('#btnEditFoto').click(function() {
+        var currentPhoto = $('#previewPhoto').attr('src');
+        image.src = currentPhoto;
+        bs_modal.modal('show');
+    });
+
+    // Upload Foto Baru Button
     $('#btnUploadFoto').click(function() {
         $('#inputPhoto').click();
     });
@@ -324,7 +363,7 @@
         if (cropper) cropper.reset();
     });
 
-    // Crop Button Click - Store base64 in hidden field
+    // Crop Button Click
     $("#cropBtn").click(function() {
         if (!cropper) {
             Swal.fire('Error', 'Cropper tidak tersedia', 'error');
@@ -341,34 +380,59 @@
             return;
         }
 
-        // Convert to base64 and store in hidden field
-        var base64data = canvas.toDataURL('image/jpeg', 0.9);
-        $('#foto_base64').val(base64data);
-        
-        // Update preview image
-        $('#previewPhoto').attr('src', base64data);
-        
-        // Close modal
-        bs_modal.modal('hide');
-        
-        // Show success toast
-        Swal.fire({
-            icon: 'success',
-            title: 'Foto siap digunakan',
-            timer: 1500,
-            showConfirmButton: false
-        });
-    });
+        canvas.toBlob(function(blob) {
+            var reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                var base64data = reader.result;
+                
+                // Show Loading
+                Swal.fire({
+                    title: 'Menyimpan Foto...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: function() {
+                        Swal.showLoading();
+                    }
+                });
 
-    // Update preview avatar when name changes
-    $('#nama_siswa').on('input', function() {
-        var nama = $(this).val() || 'Siswa Baru';
-        var currentSrc = $('#previewPhoto').attr('src');
-        // Only update if using avatar (not a cropped photo)
-        if (currentSrc.includes('ui-avatars.com')) {
-            $('#previewPhoto').attr('src', 'https://ui-avatars.com/api/?name=' + encodeURIComponent(nama) + '&background=random&size=200');
-        }
+                // AJAX ke Controller
+                $.ajax({
+                    type: "POST",
+                    dataType: "json",
+                    url: "<?= base_url('backend/siswa/updateFoto') ?>",
+                    data: {
+                        photo_cropped: base64data,
+                        id_siswa: '<?= $siswa['id'] ?>',
+                        <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    },
+                    success: function(response) {
+                        Swal.close();
+                        bs_modal.modal('hide');
+                        
+                        if(response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                            // Update Image Preview with cache bust
+                            $('#previewPhoto').attr('src', response.foto_url + '?t=' + Date.now());
+                        } else {
+                            Swal.fire('Gagal', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.close();
+                        Swal.fire('Error', 'Terjadi kesalahan sistem: ' + error, 'error');
+                        console.error(error);
+                    }
+                });
+            };
+        }, 'image/jpeg', 0.9);
     });
 </script>
 <?= $this->endSection(); ?>
-

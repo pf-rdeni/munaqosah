@@ -10,7 +10,7 @@
  * @author     SDIT An-Nahl
  */
 
-namespace App\Models;
+namespace App\Models\Munaqosah;
 
 use CodeIgniter\Model;
 
@@ -38,6 +38,8 @@ class SiswaModel extends Model
         'nama_ayah',
         'nama_ibu',
         'alamat',
+        'no_hp',
+        'hafalan',
         'foto',
         'status',
     ];

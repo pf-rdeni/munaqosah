@@ -5,6 +5,9 @@
 
 <!-- Statistik Cards -->
 <div class="row">
+    <?php $groups = $user['groups'] ?? []; ?>
+
+    <?php if (in_array('admin', $groups) || in_array('panitia', $groups)): ?>
     <!-- Total Siswa Aktif -->
     <div class="col-lg-3 col-6">
         <div class="small-box bg-info">
@@ -36,7 +39,9 @@
             </a>
         </div>
     </div>
+    <?php endif; ?>
     
+    <?php if (in_array('admin', $groups) || in_array('juri', $groups)): ?>
     <!-- Peserta Sudah Dinilai -->
     <div class="col-lg-3 col-6">
         <div class="small-box bg-warning">
@@ -52,6 +57,28 @@
             </a>
         </div>
     </div>
+    <?php endif; ?>
+
+    <?php if (in_array('admin', $groups) || in_array('panitia', $groups)): ?>
+    <!-- Total Materi -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3><?= number_format($statistik['totalMateri'] ?? 0) ?></h3>
+                <p>Materi Ujian <span style="font-size: 0.8rem">(<?= number_format($statistik['totalKriteria'] ?? 0) ?> Kriteria)</span></p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <a href="<?= base_url('backend/materi') ?>" class="small-box-footer">
+                Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Total Grup Materi -->
+    <!-- Optional: Display Grup or combine with Materi -->
+    <?php endif; ?>
     
     <!-- Tahun Ajaran -->
     <div class="col-lg-3 col-6">
@@ -91,6 +118,7 @@
                 </div>
                 
                 <div class="row mt-4">
+                    <?php if (in_array('admin', $groups) || in_array('panitia', $groups)): ?>
                     <div class="col-md-4">
                         <div class="info-box bg-light">
                             <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
@@ -107,8 +135,22 @@
                                 <span class="info-box-text">Peserta Ujian</span>
                                 <span class="info-box-number">Registrasi peserta ujian</span>
                             </div>
+                            <a href="<?= base_url('backend/peserta') ?>" class="stretched-link"></a>
                         </div>
                     </div>
+                     <div class="col-md-4">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon bg-danger"><i class="fas fa-book"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Materi & Kriteria</span>
+                                <span class="info-box-number">Kelola data materi ujian</span>
+                            </div>
+                            <a href="<?= base_url('backend/materi') ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (in_array('admin', $groups) || in_array('juri', $groups)): ?>
                     <div class="col-md-4">
                         <div class="info-box bg-light">
                             <span class="info-box-icon bg-warning"><i class="fas fa-star"></i></span>
@@ -118,6 +160,7 @@
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

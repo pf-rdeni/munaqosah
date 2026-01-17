@@ -25,14 +25,62 @@ $routes->get('/', 'AuthController::login');
 $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static function($routes) {
     
     // Dashboard
-    $routes->get('/', 'Dashboard::index');
-    $routes->get('dashboard', 'Dashboard::index');
+    $routes->get('/', 'Munaqosah\Dashboard::index');
+    $routes->get('dashboard', 'Munaqosah\Dashboard::index');
     
-    // Data Siswa
-    $routes->get('siswa', 'Siswa::index');
-    $routes->get('siswa/create', 'Siswa::create');
-    $routes->post('siswa/store', 'Siswa::store');
-    $routes->get('siswa/edit/(:num)', 'Siswa::edit/$1');
-    $routes->post('siswa/update/(:num)', 'Siswa::update/$1');
-    $routes->get('siswa/delete/(:num)', 'Siswa::delete/$1');
+    // Data Siswa (Pindah ke Munaqosah)
+    $routes->get('siswa', 'Munaqosah\Siswa::index');
+    $routes->get('siswa/create', 'Munaqosah\Siswa::create');
+    $routes->post('siswa/store', 'Munaqosah\Siswa::store');
+    $routes->get('siswa/detail/(:num)', 'Munaqosah\Siswa::detail/$1');
+    $routes->get('siswa/edit/(:num)', 'Munaqosah\Siswa::edit/$1');
+    $routes->post('siswa/update/(:num)', 'Munaqosah\Siswa::update/$1');
+    $routes->post('siswa/updateFoto', 'Munaqosah\Siswa::updateFoto');
+    $routes->get('siswa/delete/(:num)', 'Munaqosah\Siswa::delete/$1');
+    $routes->post('siswa/import', 'Munaqosah\Siswa::import');
+    $routes->post('siswa/saveImport', 'Munaqosah\Siswa::saveImport');
+    $routes->post('siswa/updateHafalan', 'Munaqosah\Siswa::updateHafalan');
+    $routes->get('siswa/downloadTemplate', 'Munaqosah\Siswa::downloadTemplate');
+
+    // Manajemen User
+    $routes->get('users', 'Users::index');
+    $routes->get('users/create', 'Users::create');
+    $routes->post('users/store', 'Users::store');
+    $routes->get('users/edit/(:num)', 'Users::edit/$1');
+    $routes->post('users/update/(:num)', 'Users::update/$1');
+    $routes->get('users/delete/(:num)', 'Users::delete/$1');
+
+    // Manajemen Juri
+    $routes->get('juri', 'Munaqosah\Juri::index');
+    $routes->get('juri/create', 'Munaqosah\Juri::create');
+    $routes->post('juri/store', 'Munaqosah\Juri::store');
+    $routes->get('juri/edit/(:num)', 'Munaqosah\Juri::edit/$1');
+    $routes->post('juri/update/(:num)', 'Munaqosah\Juri::update/$1');
+    $routes->get('juri/delete/(:num)', 'Munaqosah\Juri::delete/$1');
+    $routes->get('juri/reset-password/(:num)', 'Munaqosah\Juri::resetPassword/$1');
+    $routes->get('juri/getJuriKriteria/(:num)', 'Munaqosah\Juri::getJuriKriteria/$1');
+    $routes->post('juri/saveJuriKriteria', 'Munaqosah\Juri::saveJuriKriteria');
+    $routes->get('juri/generateUsername/(:num)', 'Munaqosah\Juri::generateUsername/$1');
+
+    // Manajemen Grup Materi
+    $routes->get('grup-materi', 'Munaqosah\GrupMateri::index');
+    $routes->get('grup-materi/create', 'Munaqosah\GrupMateri::create');
+    $routes->post('grup-materi/store', 'Munaqosah\GrupMateri::store');
+    $routes->get('grup-materi/edit/(:num)', 'Munaqosah\GrupMateri::edit/$1');
+    $routes->post('grup-materi/update/(:num)', 'Munaqosah\GrupMateri::update/$1');
+    $routes->get('grup-materi/delete/(:num)', 'Munaqosah\GrupMateri::delete/$1');
+
+    // Manajemen Materi Ujian
+    $routes->get('materi', 'Munaqosah\Materi::index');
+    $routes->get('materi/create', 'Munaqosah\Materi::create');
+    $routes->post('materi/store', 'Munaqosah\Materi::store');
+    $routes->get('materi/edit/(:num)', 'Munaqosah\Materi::edit/$1');
+    $routes->post('materi/update/(:num)', 'Munaqosah\Materi::update/$1');
+    $routes->get('materi/delete/(:num)', 'Munaqosah\Materi::delete/$1');
+
+    // Manajemen Kriteria Materi
+    $routes->get('materi/kriteria/(:num)', 'Munaqosah\Kriteria::index/$1');
+    $routes->post('kriteria/store/(:num)', 'Munaqosah\Kriteria::store/$1');
+    $routes->post('kriteria/update/(:num)', 'Munaqosah\Kriteria::update/$1');
+    $routes->get('kriteria/delete/(:num)', 'Munaqosah\Kriteria::delete/$1');
 });

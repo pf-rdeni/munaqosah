@@ -11,6 +11,9 @@
 <script src="<?= base_url('template/backend/plugins/datatables/jquery.dataTables.min.js') ?>"></script>
 <script src="<?= base_url('template/backend/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') ?>"></script>
 
+<!-- Select2 -->
+<script src="<?= base_url('template/backend/plugins/select2/js/select2.full.min.js') ?>"></script>
+
 <!-- SweetAlert2 -->
 <script src="<?= base_url('template/backend/plugins/sweetalert2/sweetalert2.min.js') ?>"></script>
 
@@ -59,7 +62,7 @@ $(document).ready(function() {
     Swal.fire({
         icon: 'success',
         title: 'Berhasil!',
-        text: '<?= session()->getFlashdata('success') ?>',
+        html: '<?= session()->getFlashdata('success') ?>',
         timer: 3000,
         showConfirmButton: false
     });
@@ -115,18 +118,21 @@ $(document).ready(function() {
     if ($.fn.DataTable) {
         $.extend($.fn.dataTable.defaults, {
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json',
-                emptyTable: 'Tidak ada data',
-                zeroRecords: 'Tidak ada data yang cocok',
-                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-                infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
-                infoFiltered: '(difilter dari _MAX_ total data)',
-                search: 'Cari:',
-                paginate: {
-                    first: 'Pertama',
-                    last: 'Terakhir',
-                    next: 'Berikutnya',
-                    previous: 'Sebelumnya'
+                "sEmptyTable":   "Tidak ada data yang tersedia pada tabel ini",
+                "sProcessing":   "Sedang memproses...",
+                "sLengthMenu":   "Tampilkan _MENU_ entri",
+                "sZeroRecords":  "Tidak ditemukan data yang sesuai",
+                "sInfo":         "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "sInfoEmpty":    "Menampilkan 0 sampai 0 dari 0 entri",
+                "sInfoFiltered": "(disaring dari _MAX_ entri keseluruhan)",
+                "sInfoPostFix":  "",
+                "sSearch":       "Cari:",
+                "sUrl":          "",
+                "oPaginate": {
+                    "sFirst":    "Pertama",
+                    "sPrevious": "Sebaiknya",
+                    "sNext":     "Selanjutnya",
+                    "sLast":     "Terakhir"
                 }
             },
             pageLength: 10,
@@ -135,4 +141,40 @@ $(document).ready(function() {
         });
     }
 });
+
+// Global function for onclick="confirmDelete('url')"
+function confirmDelete(url, text = 'Data akan dihapus permanen!') {
+    Swal.fire({
+        title: 'Yakin ingin menghapus?',
+        text: text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
+
+// Global function for Reset Password
+function confirmReset(url) {
+    Swal.fire({
+        title: 'Reset Password?',
+        text: 'Password akan dikembalikan ke default: JuriMunaqosah123',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Reset!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
 </script>

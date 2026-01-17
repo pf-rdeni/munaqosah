@@ -27,6 +27,8 @@
         <nav class="mt-2">
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                 
+                <?php $userGroups = $user['groups'] ?? []; ?>
+
                 <!-- Dashboard -->
                 <li class="nav-item">
                     <a href="<?= base_url('backend/dashboard') ?>" class="nav-link <?= uri_string() == 'backend/dashboard' ? 'active' : '' ?>">
@@ -35,18 +37,15 @@
                     </a>
                 </li>
                 
-                <!-- Data Siswa -->
+                <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
+                <!-- Data Siswa (Admin & Panitia) -->
                 <li class="nav-item">
                     <a href="<?= base_url('backend/siswa') ?>" class="nav-link <?= strpos(uri_string(), 'backend/siswa') !== false ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users"></i>
                         <p>Data Siswa</p>
                     </a>
                 </li>
-                
-                <?php 
-                // Menu tambahan berdasarkan role (untuk pengembangan selanjutnya)
-                $userGroups = $user['groups'] ?? [];
-                ?>
+                <?php endif; ?>
                 
                 <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
                 <!-- Peserta Ujian (Admin & Panitia) -->
@@ -57,6 +56,37 @@
                     </a>
                 </li>
                 <?php endif; ?>
+
+                <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
+                <!-- Separator Data Master -->
+                <li class="nav-header">DATA REFERENSI</li>
+                
+                <!-- Grup Materi -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/grup-materi') ?>" class="nav-link <?= strpos(uri_string(), 'backend/grup-materi') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-layer-group"></i>
+                        <p>Grup Materi</p>
+                    </a>
+                </li>
+
+                <!-- Materi Ujian -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/materi') ?>" class="nav-link <?= strpos(uri_string(), 'backend/materi') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-book"></i>
+                        <p>Materi Ujian</p>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
+                <!-- Manajemen Juri (Admin & Panitia) -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/juri') ?>" class="nav-link <?= strpos(uri_string(), 'backend/juri') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-gavel"></i>
+                        <p>Manajemen Juri</p>
+                    </a>
+                </li>
+                <?php endif; ?>
                 
                 <?php if (in_array('admin', $userGroups) || in_array('juri', $userGroups)): ?>
                 <!-- Input Nilai (Admin & Juri) -->
@@ -64,6 +94,16 @@
                     <a href="<?= base_url('backend/nilai') ?>" class="nav-link <?= strpos(uri_string(), 'backend/nilai') !== false ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-star"></i>
                         <p>Input Nilai</p>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if (in_array('admin', $userGroups)): ?>
+                <!-- Pengaturan User (Admin Only) -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/users') ?>" class="nav-link <?= strpos(uri_string(), 'backend/users') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-users-cog"></i>
+                        <p>Pengaturan User</p>
                     </a>
                 </li>
                 <?php endif; ?>

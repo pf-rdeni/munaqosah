@@ -1,5 +1,6 @@
 {
     "require": {
-        "codeigniter4/framework": "^4.6"
+        "codeigniter4/framework": "^4.6",
+        "phpoffice/phpspreadsheet": "^5.4"
     }
 }

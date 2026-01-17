@@ -10,7 +10,7 @@
  * @author     SDIT An-Nahl
  */
 
-namespace App\Models;
+namespace App\Models\Munaqosah;
 
 use CodeIgniter\Model;
 

@@ -3,7 +3,8 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1><?= esc($pageTitle ?? 'Dashboard') ?></h1>
+                <!-- Gunakan Class text-truncate atau kurangi size -->
+                <h4 class="m-0 text-dark"><?= esc($pageTitle ?? 'Dashboard') ?></h4>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">

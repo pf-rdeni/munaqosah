@@ -18,6 +18,10 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="<?= base_url('template/backend/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') ?>">
     
+    <!-- Select2 -->
+    <link rel="stylesheet" href="<?= base_url('template/backend/plugins/select2/css/select2.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('template/backend/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') ?>">
+    
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="<?= base_url('template/backend/plugins/sweetalert2/sweetalert2.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('template/backend/plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') ?>">
