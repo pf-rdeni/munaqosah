@@ -200,42 +200,27 @@ class Peserta extends BaseController
             }
 
             // B. Surah Tahfidz
-            $hafalanJson = json_decode($siswa['hafalan'], true);
-            $targetJuz = 30; // Default fallback
+            // REQ: Selalu ambil soal dari Juz 30 (Wajib)
+            $targetJuz = 30; 
             $rangeStart = 0;
             $rangeEnd = 999;
 
+            $hafalanJson = json_decode($siswa['hafalan'], true);
+
             if (json_last_error() === JSON_ERROR_NONE && is_array($hafalanJson) && !empty($hafalanJson)) {
-                $juzList = [];
-                // First pass: find min juz
-                foreach ($hafalanJson as $h) {
-                    if (isset($h['juz'])) {
-                        $juzList[] = (int)$h['juz'];
+                // Cari setting khusus untuk Juz 30 jika ada range tertentu (misal An-Naba s/d Al-Lail)
+                foreach($hafalanJson as $h) {
+                    if(isset($h['juz']) && (int)$h['juz'] == 30) {
+                        $rangeStart = isset($h['no_surah_mulai']) 
+                            ? (int)$h['no_surah_mulai'] 
+                            : (isset($h['surah_start']) ? (int)$h['surah_start'] : 0);
+                            
+                        $rangeEnd = isset($h['no_surah_akhir']) 
+                            ? (int)$h['no_surah_akhir'] 
+                            : (isset($h['surah_end']) ? (int)$h['surah_end'] : 999);
+                        break;
                     }
                 }
-                
-                if (!empty($juzList)) {
-                    $targetJuz = min($juzList);
-                    
-                    // Second pass: get range for target juz
-                    foreach($hafalanJson as $h) {
-                        if(isset($h['juz']) && (int)$h['juz'] == $targetJuz) {
-                            $rangeStart = isset($h['no_surah_mulai']) 
-                                ? (int)$h['no_surah_mulai'] 
-                                : (isset($h['surah_start']) ? (int)$h['surah_start'] : 0);
-                                
-                            $rangeEnd = isset($h['no_surah_akhir']) 
-                                ? (int)$h['no_surah_akhir'] 
-                                : (isset($h['surah_end']) ? (int)$h['surah_end'] : 999);
-                            break;
-                        }
-                    }
-                }
-            } else {
-                 $parts = array_map('trim', explode(',', $siswa['hafalan']));
-                 if (!empty($parts)) {
-                     $targetJuz = (int)end($parts);
-                 }
             }
 
             // Determine Candidate Surahs from Target Juz with Range Filter
@@ -331,10 +316,5 @@ class Peserta extends BaseController
         return $this->response->setJSON(['success' => true, 'message' => 'Data reset!']);
     }
 
-    private function getTahunAjaran(): string
-    {
-        $bulan = (int)date('m');
-        $tahun = (int)date('Y');
-        return ($bulan >= 7) ? $tahun . '/' . ($tahun + 1) : ($tahun - 1) . '/' . $tahun;
-    }
+
 }
