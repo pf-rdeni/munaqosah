@@ -88,8 +88,8 @@
                 </li>
                 <?php endif; ?>
                 
-                <?php if (in_array('admin', $userGroups) || in_array('juri', $userGroups)): ?>
-                <!-- Input Nilai (Admin & Juri) -->
+                <?php if (in_array('juri', $userGroups)): ?>
+                <!-- Input Nilai (Juri Only) -->
                 <li class="nav-item">
                     <a href="<?= base_url('backend/munaqosah/input-nilai') ?>" class="nav-link <?= strpos(uri_string(), 'input-nilai') !== false ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-star"></i>

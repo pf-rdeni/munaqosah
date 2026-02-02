@@ -35,6 +35,10 @@ class InputNilai extends BaseController
             return redirect()->to('/login');
         }
 
+        if (!$this->inGroups('juri')) {
+            return redirect()->to('/backend/dashboard')->with('error', 'Akses ditolak. Menu ini hanya untuk Juri.');
+        }
+
         // Cek apakah user adalah Juri
         $juri = $this->getJuriInfo();
         

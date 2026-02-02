@@ -41,7 +41,7 @@
     </div>
     <?php endif; ?>
     
-    <?php if (in_array('admin', $groups) || in_array('juri', $groups)): ?>
+    <?php if (in_array('juri', $groups)): ?>
     <!-- Peserta Sudah Dinilai -->
     <div class="col-lg-3 col-6">
         <div class="small-box bg-warning">
@@ -52,7 +52,7 @@
             <div class="icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <a href="<?= base_url('backend/nilai') ?>" class="small-box-footer">
+            <a href="<?= base_url('backend/munaqosah/input-nilai') ?>" class="small-box-footer">
                 Lihat Detail <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
@@ -126,6 +126,7 @@
                                 <span class="info-box-text">Data Siswa</span>
                                 <span class="info-box-number">Kelola data siswa SDIT An-Nahl</span>
                             </div>
+                            <a href="<?= base_url('backend/siswa') ?>" class="stretched-link"></a>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -148,9 +149,48 @@
                             <a href="<?= base_url('backend/materi') ?>" class="stretched-link"></a>
                         </div>
                     </div>
+
+                    <!-- Grup Materi -->
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                             <span class="info-box-icon bg-secondary"><i class="fas fa-layer-group"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Grup Materi</span>
+                                <span class="info-box-number">Kelola pengelompokan materi</span>
+                            </div>
+                            <a href="<?= base_url('backend/grup-materi') ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+
+                    <!-- Manajemen Juri -->
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                             <span class="info-box-icon bg-primary"><i class="fas fa-gavel"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Manajemen Juri</span>
+                                <span class="info-box-number">Kelola data juri & plotting</span>
+                            </div>
+                            <a href="<?= base_url('backend/juri') ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
+
+                    <?php if (in_array('admin', $groups)): ?>
+                    <!-- Pengaturan User (Admin Only) -->
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                             <span class="info-box-icon bg-dark"><i class="fas fa-users-cog"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Pengaturan User</span>
+                                <span class="info-box-number">Kelola akun pengguna</span>
+                            </div>
+                            <a href="<?= base_url('backend/users') ?>" class="stretched-link"></a>
+                        </div>
+                    </div>
                     <?php endif; ?>
 
-                    <?php if (in_array('admin', $groups) || in_array('juri', $groups)): ?>
+                    <?php endif; ?>
+
+                    <?php if (in_array('juri', $groups)): ?>
                     <div class="col-md-4">
                         <div class="info-box bg-light">
                             <span class="info-box-icon bg-warning"><i class="fas fa-star"></i></span>
@@ -158,6 +198,7 @@
                                 <span class="info-box-text">Input Nilai</span>
                                 <span class="info-box-number">Penilaian oleh juri</span>
                             </div>
+                            <a href="<?= base_url('backend/munaqosah/input-nilai') ?>" class="stretched-link"></a>
                         </div>
                     </div>
                     <?php endif; ?>
