@@ -1,8 +1,8 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/u152344/annahl
-    - export PUBLICPATH=/home/u152344/public_html/annahl
+    - export DEPLOYPATH=/home/u1525344/annahl
+    - export PUBLICPATH=/home/u1525344/public_html/annahl
     # Copy Core Files
     - /bin/cp -R app $DEPLOYPATH
     - /bin/cp -R system $DEPLOYPATH
