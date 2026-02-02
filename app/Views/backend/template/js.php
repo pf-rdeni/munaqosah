@@ -140,6 +140,17 @@ $(document).ready(function() {
             responsive: true
         });
     }
+    // =================================================================
+    // LOADING OVERLAY
+    // =================================================================
+    // Hilangkan overlay saat halaman selesai dirender
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+        setTimeout(function() {
+            $(loader).fadeOut('slow');
+        }, 500); // Delay sedikit agar transisi halus
+    }
+
 });
 
 // Global function for onclick="confirmDelete('url')"
