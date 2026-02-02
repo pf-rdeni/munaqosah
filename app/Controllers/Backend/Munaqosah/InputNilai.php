@@ -9,6 +9,7 @@ use App\Models\Munaqosah\JuriModel;
 use App\Models\Munaqosah\JuriKriteriaModel;
 use App\Models\Munaqosah\KriteriaModel;
 use App\Models\Munaqosah\TblAlquranModel;
+use App\Models\Munaqosah\AntrianModel;
 
 class InputNilai extends BaseController
 {
@@ -432,6 +433,81 @@ class InputNilai extends BaseController
             'success' => true,
             'html' => $html,
             'count' => count($listDinilai)
+        ]);
+    }
+    public function getNextPesertaFromAntrian()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Request harus menggunakan AJAX']);
+        }
+
+        $juri = $this->getJuriInfo();
+        if (!$juri) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Data juri tidak ditemukan']);
+        }
+
+        $tahunAjaran = $this->getTahunAjaran();
+        $idGrupMateri = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
+        
+        // Filter by Room ID (id_grup_juri) to ensure only participants assigned to THIS Juri's room are shown
+        $roomId = $juri['id_grup_juri'];
+
+        if (!$roomId) {
+             // Fallback if Juri has no room assigned yet (should not happen in new logic)
+             // But let's return empty to be safe, or allow fallback?
+             // Safest is to return nothing if no room assigned.
+             return $this->response->setJSON(['success' => true, 'hasPeserta' => false]);
+        }
+        
+        $antrianModel = new AntrianModel();
+        
+        // Cari peserta yang statusnya 'sedang_ujian' (atau 'dipanggil') DI ROOM INI
+        $potentialCandidates = $antrianModel->where('tahun_ajaran', $tahunAjaran)
+                                            ->where('id_grup_materi', $idGrupMateri)
+                                            ->where('id_grup_juri', $roomId) // Strict Room Check
+                                            ->whereIn('status_antrian', ['sedang_ujian', 'dipanggil'])
+                                            ->orderBy('updated_at', 'DESC') 
+                                            ->findAll();
+                                            
+        if (empty($potentialCandidates)) {
+             return $this->response->setJSON([
+                'success' => true,
+                'hasPeserta' => false,
+                'NoPeserta' => null
+            ]);
+        }
+        
+        // Filter peserta yang sudah dinilai
+        $validCandidate = null;
+        foreach ($potentialCandidates as $candidate) {
+            // Check if already graded by THIS Juri
+            // Note: getPesertaDinilaiByJuri returns list of finished grading
+            // But we want to know if specific grading exists?
+            // Let's use NilaiUjianModel check
+             $exist = $this->nilaiModel->where([
+                'no_peserta' => $candidate['no_peserta'],
+                'id_juri' => $juri['id'],
+                'tahun_ajaran' => $tahunAjaran
+            ])->first();
+            
+            if (!$exist) {
+                // Found one!
+                $validCandidate = $candidate;
+                break;
+            }
+        }
+        
+        if ($validCandidate) {
+            return $this->response->setJSON([
+                'success' => true,
+                'hasPeserta' => true,
+                'NoPeserta' => $validCandidate['no_peserta']
+            ]);
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'hasPeserta' => false
         ]);
     }
 }

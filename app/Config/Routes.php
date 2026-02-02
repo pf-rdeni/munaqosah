@@ -27,6 +27,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     // Dashboard
     $routes->get('/', 'Munaqosah\Dashboard::index');
     $routes->get('dashboard', 'Munaqosah\Dashboard::index');
+    $routes->get('index', 'Munaqosah\Dashboard::index'); // Fix 404 for backend/index
     
     // Data Siswa (Pindah ke Munaqosah)
     $routes->get('siswa', 'Munaqosah\Siswa::index');
@@ -98,4 +99,13 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('munaqosah/input-nilai/save', 'Munaqosah\InputNilai::save');
     $routes->post('munaqosah/input-nilai/authorize-edit', 'Munaqosah\InputNilai::authorizeEdit');
     $routes->post('munaqosah/input-nilai/refresh-history', 'Munaqosah\InputNilai::refreshHistory');
+    $routes->get('munaqosah/input-nilai/get-next-peserta-from-antrian', 'Munaqosah\InputNilai::getNextPesertaFromAntrian');
+
+    // Manajemen Antrian
+    $routes->get('antrian', 'Antrian::index');
+    $routes->get('antrian/monitoring', 'Antrian::monitoring');
+    $routes->get('antrian/get-queue-data', 'Antrian::getQueueData');
+    $routes->post('antrian/register', 'Antrian::register');
+    $routes->post('antrian/update-status', 'Antrian::updateStatus');
+    $routes->post('antrian/delete', 'Antrian::delete');
 });

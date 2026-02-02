@@ -16,7 +16,9 @@ class AddIdGrupJuriToJuri extends Migration
                 'comment'    => '1-10 Group ID for Logic'
             ]
         ];
-        $this->forge->addColumn('tbl_munaqosah_juri', $fields);
+        if (!$this->db->fieldExists('id_grup_juri', 'tbl_munaqosah_juri')) {
+            $this->forge->addColumn('tbl_munaqosah_juri', $fields);
+        }
     }
 
     public function down()

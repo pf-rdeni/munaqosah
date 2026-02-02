@@ -58,6 +58,17 @@
                 <?php endif; ?>
 
                 <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
+                <li class="nav-header">ANTRIAN UJIAN</li>
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/antrian') ?>" class="nav-link <?= strpos(uri_string(), 'backend/antrian') !== false && strpos(uri_string(), 'monitoring') === false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-bullhorn"></i>
+                        <p>Antrian</p>
+                    </a>
+                </li>
+
+                <?php endif; ?>
+
+                <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
                 <!-- Separator Data Master -->
                 <li class="nav-header">DATA REFERENSI</li>
                 

@@ -13,6 +13,17 @@
                     </button>
                 </div>
             </div>
+            <style>
+                @keyframes blink-animation {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.7; transform: scale(1.05); box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+                .btn-blink {
+                    animation: blink-animation 1s infinite ease-in-out;
+                    font-weight: bold;
+                }
+            </style>
             <div class="card-body">
                 <form id="form-search-peserta" class="form-inline justify-content-center">
                     <div class="input-group input-group-lg mb-2 mr-sm-2">
@@ -20,6 +31,11 @@
                             <div class="input-group-text"><i class="fas fa-id-card"></i></div>
                         </div>
                         <input type="text" class="form-control" id="no_peserta" name="no_peserta" placeholder="Masukkan No Peserta" autofocus required autocomplete="off">
+                            <div class="input-group-append">
+                                 <button class="btn btn-success btn-blink" type="button" id="btnPesertaAntrian" style="display: none;">
+                                    <i class="fas fa-bell mr-1"></i> <span id="btnPesertaAntrianText">Dipanggil: 101</span>
+                                </button>
+                            </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg mb-2"><i class="fas fa-search"></i> Cari / Mulai</button>
                 </form>
@@ -146,5 +162,93 @@
             }
         });
     }
+
+    // ==================== CHECK ANTRIAN PESERTA ====================
+    let checkAntrianTimer = null;
+    let currentRecommendedNoPeserta = null;
+
+    function checkAntrianPeserta() {
+        // Cek apakah input kosong? Jika user sedang mengetik sebaiknya jangan ganggu?
+        // Tapi requirement says: "show recommendation button"
+        
+        $.ajax({
+            url: '<?= base_url('backend/munaqosah/input-nilai/get-next-peserta-from-antrian') ?>',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.hasPeserta && response.NoPeserta) {
+                    if (currentRecommendedNoPeserta !== response.NoPeserta) {
+                        currentRecommendedNoPeserta = response.NoPeserta;
+                        showPesertaAntrianButton(response.NoPeserta);
+                    }
+                } else {
+                    if (currentRecommendedNoPeserta !== null) {
+                        currentRecommendedNoPeserta = null;
+                        hidePesertaAntrianButton();
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error checking antrian:', error);
+            }
+        });
+    }
+
+    function showPesertaAntrianButton(noPeserta) {
+        // Show clean number (e.g. 101 from Peserta-101)
+        const cleanNo = noPeserta.includes('-') ? noPeserta.split('-').pop() : noPeserta;
+        $('#btnPesertaAntrianText').text('Peserta: ' + cleanNo);
+        $('#btnPesertaAntrian').fadeIn(300);
+        // Optional: Notify sound or toast
+    }
+
+    function hidePesertaAntrianButton() {
+        $('#btnPesertaAntrian').fadeOut(300);
+    }
+
+    // Button Handler
+    $('#btnPesertaAntrian').on('click', function() {
+        if (currentRecommendedNoPeserta) {
+            $('#no_peserta').val(currentRecommendedNoPeserta);
+            $('#form-search-peserta').submit();
+        }
+    });
+
+    // Start Polling
+    function startCheckAntrian() {
+        if (checkAntrianTimer) clearInterval(checkAntrianTimer);
+        checkAntrianPeserta(); // Run immediately
+        checkAntrianTimer = setInterval(checkAntrianPeserta, 3000); // 3s for fast response
+    }
+    
+    // Stop Polling (e.g. when form is loaded)
+    // Sebaiknya tetap polling jika ingin tahu update? 
+    // Tapi jika sedang menilai (Input Form Active), mungkin tidak perlu polling untuk current user,
+    // KECUALI status berubah jadi waiting lagi? 
+    // Tapi logikanya: Juri sedang menilai SATU orang. 
+    // Jadi mungkin pause polling saat form loaded, dan resume saat selesai/cancel.
+    
+    // Hook into existing logic
+    // Pada loadForm success -> stop polling
+    // Tapi di script atas, logic ada di $(document).ready.
+    // Kita bisa override atau inject logic tambahan.
+    
+    startCheckAntrian();
+
+    // Override original submit logic slightly to pause polling?
+    // Or just let it run. If 'sedang_ujian' status persists until grading done? 
+    // Antrian status usually updated to 'selesai' AFTER grading saved?
+    // Or updated to 'sedang_ujian' via Monitoring Dashboard?
+    // Current logic: Juri assesses. Queue status depends on external operator OR auto-update.
+    // If we want auto-update status when Juri starts grading?
+    // For now, let's keep polling. It won't hurt much.
+    // But button might confuse if shown while grading another student.
+    // Maybe hide button if #penilaian-container is not empty?
+    
+    // Let's refine checkAntrianPeserta to only show if #penilaian-container is empty (or showing search form)
+    // Actually, the search form is always visible (collapsible).
+    // If form is collapsed (CardWidget), maybe we shouldn't show button?
+    // Let's stick to basic requirement first.
+
 </script>
 <?= $this->endSection() ?>
