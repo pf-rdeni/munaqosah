@@ -34,26 +34,7 @@ class GrupMateri extends BaseController
         return view('backend/grup_materi/index', $data);
     }
 
-    public function create()
-    {
-        if (!$this->isLoggedIn()) {
-            return redirect()->to('/login');
-        }
 
-        $data = [
-            'title'      => 'Tambah Grup Materi',
-            'pageTitle'  => 'Tambah Grup Materi',
-            'breadcrumb' => [
-                ['title' => 'Home', 'url' => '/backend/dashboard'],
-                ['title' => 'Grup Materi', 'url' => '/backend/grup-materi'],
-                ['title' => 'Tambah', 'url' => ''],
-            ],
-            'user'       => $this->getCurrentUser(),
-            'validation' => \Config\Services::validation()
-        ];
-
-        return view('backend/grup_materi/create', $data);
-    }
 
     public function store()
     {
@@ -77,12 +58,12 @@ class GrupMateri extends BaseController
         // Cek apakah ID yang diinput sudah ada?
         $isExist = $this->grupMateriModel->where('id_grup_materi', $inputID)->countAllResults() > 0;
 
-        if (!$isExist) {
+        if (!$isExist && !empty($inputID)) {
             // Jika belum ada, gunakan ID tersebut (ini support custom ID seperti PD01)
             $finalID = $inputID;
         } else {
-            // Jika sudah ada (collision), lakukan Auto-Increment berdasarkan Prefix
-            $prefix = substr($inputID, 0, 2);
+            // Jika sudah ada (collision) atau kosong, lakukan Auto-Increment berdasarkan Prefix
+            $prefix = !empty($inputID) ? substr($inputID, 0, 2) : 'GR';
             if (!ctype_alpha($prefix)) {
                  $prefix = 'GR'; 
             }
@@ -110,39 +91,13 @@ class GrupMateri extends BaseController
             'nama_grup_materi' => $this->request->getPost('nama_grup_materi'),
             'deskripsi'        => $this->request->getPost('deskripsi'),
             'urutan'           => $this->request->getPost('urutan') ?? 0,
-            'status'           => 'aktif'
+            'status'           => 'aktif',
+            'kondisional_set'  => $this->request->getPost('kondisional_set') ?? 'nilai_default',
         ];
 
         $this->grupMateriModel->insert($data);
 
         return redirect()->to('/backend/grup-materi')->with('success', "Grup materi berhasil ditambahkan (ID: {$finalID}).");
-    }
-
-    public function edit($id)
-    {
-        if (!$this->isLoggedIn()) {
-            return redirect()->to('/login');
-        }
-
-        $grup = $this->grupMateriModel->find($id);
-        if (!$grup) {
-            return redirect()->back()->with('error', 'Data tidak ditemukan.');
-        }
-
-        $data = [
-            'title'      => 'Edit Grup Materi',
-            'pageTitle'  => 'Edit Grup Materi',
-            'breadcrumb' => [
-                ['title' => 'Home', 'url' => '/backend/dashboard'],
-                ['title' => 'Grup Materi', 'url' => '/backend/grup-materi'],
-                ['title' => 'Edit', 'url' => ''],
-            ],
-            'user'       => $this->getCurrentUser(),
-            'grup'       => $grup,
-            'validation' => \Config\Services::validation()
-        ];
-
-        return view('backend/grup_materi/edit', $data);
     }
 
     public function update($id)
@@ -167,7 +122,8 @@ class GrupMateri extends BaseController
             'nama_grup_materi' => $this->request->getPost('nama_grup_materi'),
             'deskripsi'        => $this->request->getPost('deskripsi'),
             'urutan'           => $this->request->getPost('urutan'),
-            'status'           => $this->request->getPost('status')
+            'status'           => $this->request->getPost('status'),
+            'kondisional_set'  => $this->request->getPost('kondisional_set'),
         ];
 
         $this->grupMateriModel->update($id, $data);

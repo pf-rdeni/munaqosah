@@ -259,7 +259,10 @@
                                                  <i class="fas fa-undo mr-1"></i> Reset
                                             </button>
                                         <?php else: ?>
-                                            <span class="text-success"><i class="fas fa-check-circle mr-1"></i> Selesai</span>
+                                            <span class="text-success mr-2"><i class="fas fa-check-circle mr-1"></i> Selesai</span>
+                                            <button type="button" class="btn btn-sm text-warning font-weight-bold" style="background: transparent; border: none; box-shadow: none;" onclick="updateStatus(<?= $a['id'] ?>, 'menunggu')" title="Reset">
+                                                <i class="fas fa-undo mr-1"></i> Reset
+                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 </td>

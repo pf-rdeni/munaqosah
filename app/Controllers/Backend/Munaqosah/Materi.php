@@ -29,9 +29,10 @@ class Materi extends BaseController
         }
 
         // Join dengan Grup Materi dan Aggregasi Kriteria
-        // Format: 1. Nama bobot 20
         $this->materiModel->select('tbl_munaqosah_materi_ujian.*, gm.nama_grup_materi');
-        $this->materiModel->select("GROUP_CONCAT(CONCAT(k.urutan, '. ', k.nama_kriteria, ' bobot ', TRIM(TRAILING '.00' FROM k.bobot)) ORDER BY k.urutan ASC SEPARATOR '\n') as list_kriteria", false);
+        // Split menjadi 2 kolom terpisah
+        $this->materiModel->select("GROUP_CONCAT(CONCAT(k.urutan, '. ', k.nama_kriteria) ORDER BY k.urutan ASC SEPARATOR '\n') as list_kriteria_nama", false);
+        $this->materiModel->select("GROUP_CONCAT(TRIM(TRAILING '.00' FROM k.bobot) ORDER BY k.urutan ASC SEPARATOR '\n') as list_kriteria_bobot", false);
         
         $materiList = $this->materiModel->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_materi_ujian.id_grup_materi', 'left')
                                         ->join('tbl_munaqosah_kriteria_materi_ujian k', 'k.id_materi = tbl_munaqosah_materi_ujian.id', 'left')
@@ -39,6 +40,8 @@ class Materi extends BaseController
                                         ->orderBy('gm.nama_grup_materi', 'ASC')
                                         ->orderBy('nama_materi', 'ASC')
                                         ->findAll();
+
+        $grupMateri = $this->grupModel->findAll();
 
         $data = [
             'title'      => 'Data Materi Ujian',
@@ -48,39 +51,13 @@ class Materi extends BaseController
                 ['title' => 'Materi Ujian', 'url' => ''],
             ],
             'user'       => $this->getCurrentUser(),
-            'materiList' => $materiList
+            'materiList' => $materiList,
+            'grupMateri' => $grupMateri
         ];
 
         return view('backend/materi/index', $data);
     }
 
-    public function create()
-    {
-        if (!$this->isLoggedIn()) {
-            return redirect()->to('/login');
-        }
-        
-        if (!$this->isAdmin() && !$this->isPanitia()) {
-             return redirect()->to('/backend/dashboard')->with('error', 'Akses ditolak.');
-        }
-
-        $grupMateri = $this->grupModel->findAll();
-
-        $data = [
-            'title'      => 'Tambah Materi',
-            'pageTitle'  => 'Tambah Materi Ujian',
-            'breadcrumb' => [
-                ['title' => 'Home', 'url' => '/backend/dashboard'],
-                ['title' => 'Materi Ujian', 'url' => '/backend/materi'],
-                ['title' => 'Tambah', 'url' => ''],
-            ],
-            'user'       => $this->getCurrentUser(),
-            'grupMateri' => $grupMateri,
-            'validation' => \Config\Services::validation(),
-        ];
-
-        return view('backend/materi/create', $data);
-    }
 
     public function store()
     {
@@ -122,39 +99,7 @@ class Materi extends BaseController
         return redirect()->back()->withInput()->with('error', 'Gagal menyimpan materi.');
     }
 
-    public function edit($id)
-    {
-        if (!$this->isLoggedIn()) {
-            return redirect()->to('/login');
-        }
 
-        if (!$this->isAdmin() && !$this->isPanitia()) {
-             return redirect()->to('/backend/dashboard')->with('error', 'Akses ditolak.');
-        }
-
-        $materi = $this->materiModel->find($id);
-        if (!$materi) {
-            return redirect()->back()->with('error', 'Data tidak ditemukan.');
-        }
-
-        $grupMateri = $this->grupModel->findAll();
-
-        $data = [
-            'title'      => 'Edit Materi',
-            'pageTitle'  => 'Edit Materi Ujian',
-            'breadcrumb' => [
-                ['title' => 'Home', 'url' => '/backend/dashboard'],
-                ['title' => 'Materi Ujian', 'url' => '/backend/materi'],
-                ['title' => 'Edit', 'url' => ''],
-            ],
-            'user'       => $this->getCurrentUser(),
-            'materi'     => $materi,
-            'grupMateri' => $grupMateri,
-            'validation' => \Config\Services::validation(),
-        ];
-
-        return view('backend/materi/edit', $data);
-    }
 
     public function update($id)
     {

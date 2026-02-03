@@ -3,36 +3,7 @@
 <?= $this->section('content'); ?>
 <div class="row">
     <div class="col-12">
-        <?php 
-            $alertColor = ($totalBobot == 100) ? 'success' : 'warning'; 
-            $alertIcon = ($totalBobot == 100) ? 'check-circle' : 'exclamation-triangle';
-            
-            // Format angka tanpa desimal .00 jika bulat
-            $fmtTotal = (float)$totalBobot; 
-        ?>
-        <div class="callout callout-<?= $alertColor ?>">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5><i class="fas fa-<?= $alertIcon ?> mr-2"></i> Materi: <?= esc($materi['nama_materi']) ?> (<?= esc($materi['id_materi']) ?>)</h5>
-                    <p>Total Bobot Penilaian: <strong><?= $fmtTotal ?> / 100</strong></p>
-                    
-                    <?php if ($totalBobot < 100): ?>
-                        <small>Anda masih perlu menambahkan <strong><?= 100 - $totalBobot ?></strong> poin lagi agar total menjadi 100.</small>
-                    <?php elseif ($totalBobot > 100): ?>
-                        <small class="text-danger">Total melebihi batas! Harap kurangi bobot.</small>
-                    <?php else: ?>
-                        <small>Total bobot sudah pas (100).</small>
-                    <?php endif; ?>
-                </div>
-                <!-- Progress Bar visual -->
-                <div class="col-4">
-                     <div class="progress progress-sm">
-                        <div class="progress-bar bg-<?= $alertColor ?>" role="progressbar" aria-valuenow="<?= $totalBobot ?>" aria-valuemin="0" aria-valuemax="100" style="width: <?= min($totalBobot, 100) ?>%">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <div class="card">
             <div class="card-header">
@@ -139,8 +110,7 @@
                         <div class="col-6">
                             <div class="form-group">
                                 <label>Bobot</label>
-                                <input type="number" step="0.01" name="bobot" class="form-control" value="0" max="<?= $sisa ?>" min="0">
-                                <small class="text-muted">Max: <?= (float)$sisa ?></small>
+                                <input type="number" step="0.01" name="bobot" class="form-control" value="0" min="0">
                             </div>
                         </div>
                         <div class="col-6">
@@ -153,7 +123,7 @@
                 </div>
                 <div class="modal-footer justify-content-between">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary" <?= ($sisa <= 0) ? 'disabled' : '' ?>><i class="fas fa-save"></i> Simpan</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
                 </div>
             </form>
         </div>
@@ -217,8 +187,8 @@
 
 <?= $this->section('scripts'); ?>
 <script>
-    // Simpan Total Bobot Global dari PHP ke JS
-    const globalTotalBobot = <?= (float)$totalBobot ?>;
+    // Simpan Total Bobot Global dari PHP ke JS (Excluded for now)
+    // const globalTotalBobot = <?= (float)$totalBobot ?>;
 
     $(document).on('click', '.btn-edit', function() {
         let id = $(this).data('id');
@@ -227,11 +197,6 @@
         let bobot = parseFloat($(this).data('bobot'));
         let urutan = $(this).data('urutan');
 
-        // Hitung Limit untuk Item ini
-        // Limit = (100 - TotalGlobal) + BobotItemIni
-        let sisaGlobal = 100 - globalTotalBobot;
-        let maxAllowed = sisaGlobal + bobot;
-        
         // Update Form
         $('#formEdit').attr('action', '<?= base_url('backend/kriteria/update') ?>/' + id);
         $('#editNama').val(nama);
@@ -239,22 +204,12 @@
         $('#editBobot').val(bobot);
         $('#editUrutan').val(urutan);
         
-        // Update Constraint
-        $('#editBobot').attr('max', maxAllowed);
-        
-        // Update Alert Text
-        let alertHtml = 'Bobot saat ini: <strong>' + bobot + '</strong>. Maksimal yang bisa diupdate: <strong>' + maxAllowed.toFixed(2) + '</strong>';
+        // Update Alert Text (Informational only)
+        let alertHtml = 'Bobot saat ini: <strong>' + bobot + '</strong>. (Tidak ada batasan total)';
         $('#editAlertText').html(alertHtml);
-        
-        // Visual Color
-        // Jika maxAllowed < bobot (kasus aneh/over) -> Warning, else Info
-        if (maxAllowed <= 0) {
-             $('#editAlert').removeClass('alert-info').addClass('alert-danger');
-             $('#editBobot').attr('readonly', true); // Lock if full? No, user might want to reduce it.
-        } else {
-             $('#editAlert').removeClass('alert-danger').addClass('alert-info');
-             $('#editBobot').attr('readonly', false);
-        }
+        $('#editAlert').removeClass('alert-danger').addClass('alert-info');
+        $('#editBobot').removeAttr('max'); 
+        $('#editBobot').attr('readonly', false);
     });
 </script>
 <?= $this->endSection(); ?>

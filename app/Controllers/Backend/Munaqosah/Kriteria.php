@@ -69,11 +69,11 @@ class Kriteria extends BaseController
 
         $newBobot = $this->request->getPost('bobot') ?? 0;
         
-        // Validasi Total Bobot > 100
-        $currentTotal = $this->getTotalBobot($materiId);
-        if (($currentTotal + $newBobot) > 100) {
-            return redirect()->back()->withInput()->with('error', 'Gagal! Total bobot melebihi 100. Sisa bobot: ' . (100 - $currentTotal));
-        }
+        // Validasi Total Bobot > 100 (REMOVED)
+        // $currentTotal = $this->getTotalBobot($materiId);
+        // if (($currentTotal + $newBobot) > 100) {
+        //     return redirect()->back()->withInput()->with('error', 'Gagal! Total bobot melebihi 100. Sisa bobot: ' . (100 - $currentTotal));
+        // }
 
         // Simpan
         $namaKriteria = $this->request->getPost('nama_kriteria');
@@ -113,11 +113,11 @@ class Kriteria extends BaseController
         $newBobot = $this->request->getPost('bobot');
         $materiId = $kriteria['id_materi'];
 
-        // Validasi Total Bobot (Exclude current bobot first)
-        $currentTotal = $this->getTotalBobot($materiId) - $kriteria['bobot'];
-        if (($currentTotal + $newBobot) > 100) {
-             return redirect()->back()->withInput()->with('error', 'Gagal! Total bobot melebihi 100. Max update: ' . (100 - $currentTotal));
-        }
+        // Validasi Total Bobot (Exclude current bobot first) (REMOVED)
+        // $currentTotal = $this->getTotalBobot($materiId) - $kriteria['bobot'];
+        // if (($currentTotal + $newBobot) > 100) {
+        //      return redirect()->back()->withInput()->with('error', 'Gagal! Total bobot melebihi 100. Max update: ' . (100 - $currentTotal));
+        // }
 
         $data = [
             'id'            => $kriteriaId,

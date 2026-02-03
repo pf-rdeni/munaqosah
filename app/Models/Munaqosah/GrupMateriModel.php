@@ -16,7 +16,8 @@ class GrupMateriModel extends Model
         'nama_grup_materi',
         'deskripsi',
         'urutan',
-        'status'
+        'status',
+        'kondisional_set'
     ];
 
     /**
