@@ -65,7 +65,7 @@ class InputNilai extends BaseController
         return view('backend/nilai/index', $data);
     }
 
-    // Step 2: Load Form Penilaian via AJAX
+    // Langkah 2: Muat Form Penilaian via AJAX
     public function loadForm()
     {
         if (!$this->request->isAJAX()) {
@@ -88,57 +88,50 @@ class InputNilai extends BaseController
         }
 
         // 3. Ambil Kriteria Penilaian Juri
-        // Fetch kriteria IDs assigned to this Juri
-        // MUST use the PK 'id' (int), not 'id_juri' (string code) because tbl_munaqosah_juri_kriteria uses the INT FK.
+        // Ambil ID Kriteria yang ditugaskan ke Juri ini
         $juriPk = $juri['id']; 
         $kriteriaIds = $this->juriKriteriaModel->getKriteriaIdsByJuri($juriPk); 
 
         $kriteriaList = [];
         if (!empty($kriteriaIds)) {
-            $kriteriaList = $this->kriteriaModel->whereIn('id', $kriteriaIds)
-                                                ->orderBy('urutan', 'ASC')
+            $kriteriaList = $this->kriteriaModel->select('tbl_munaqosah_kriteria_materi_ujian.*, m.nilai_maksimal, m.nama_materi, m.id as materi_pk')
+                                                ->join('tbl_munaqosah_materi_ujian m', 'm.id = tbl_munaqosah_kriteria_materi_ujian.id_materi', 'left')
+                                                ->whereIn('tbl_munaqosah_kriteria_materi_ujian.id', $kriteriaIds)
+                                                ->orderBy('tbl_munaqosah_kriteria_materi_ujian.urutan', 'ASC')
                                                 ->findAll();
         } else {
-            // Fallback: Get ALL Kriteria based on Juri's Grup Materi
-            // Use the aliased ID from getJuriInfo to avoid collision with Code 'TZ01'
+            // Fallback: Ambil SEMUA Kriteria berdasarkan Grup Materi Juri
             $idGrupMateri = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
             
-            // Log for debugging
-            log_message('error', 'DEBUG NILAI: Juri ID=' . ($juri['id']??'null') . ' GrupMateri=' . $idGrupMateri);
-            
             if ($idGrupMateri) {
-                // Get Materi IDs in this group
+                // Ambil ID Materi dalam grup ini
                 $materiModel = new \App\Models\Munaqosah\MateriModel();
                 $materiList = $materiModel->where('id_grup_materi', $idGrupMateri)->findAll();
                 
-                log_message('error', 'DEBUG NILAI: Found Materi: ' . json_encode($materiList));
-                
                 if (!empty($materiList)) {
                     $materiIds = array_column($materiList, 'id'); 
-                    
-                    log_message('error', 'DEBUG NILAI: Materi IDs: ' . json_encode($materiIds));
 
-                    // Get Kriteria for these Materi
-                    $kriteriaList = $this->kriteriaModel->whereIn('id_materi', $materiIds)
-                                                        ->orderBy('urutan', 'ASC')
+                    // Ambil Kriteria untuk Materi-materi ini
+                    $kriteriaList = $this->kriteriaModel->select('tbl_munaqosah_kriteria_materi_ujian.*, m.nilai_maksimal, m.nama_materi, m.id as materi_pk')
+                                                        ->join('tbl_munaqosah_materi_ujian m', 'm.id = tbl_munaqosah_kriteria_materi_ujian.id_materi', 'left')
+                                                        ->whereIn('tbl_munaqosah_kriteria_materi_ujian.id_materi', $materiIds)
+                                                        ->orderBy('tbl_munaqosah_kriteria_materi_ujian.urutan', 'ASC')
                                                         ->findAll();
-                                                        
-                    log_message('error', 'DEBUG NILAI: Found Kriteria Count: ' . count($kriteriaList));
                 }
             }
         }    
 
-        // 4. Determine Items (Tabs)
-        // If Juri is for Tahfidz (check Grup Materi or Materi Name)
+        // 4. Tentukan Items (Tabs)
+        // Jika Juri adalah untuk Tahfidz (cek Grup Materi atau Nama Materi)
         $isTahfidz = false;
-        // Check Grup Materi Name. 
+        // Cek Nama Grup Materi. 
         if (isset($juri['nama_grup_materi']) && (stripos($juri['nama_grup_materi'], 'Tahfidz') !== false)) {
             $isTahfidz = true;
         }
 
         $items = [];
-        // Construct Items based on Peserta's assignments
-        // Parse 'surah' JSON
+        // Buat Items berdasarkan tugas Peserta
+        // Parse JSON 'surah'
         $surahJson = json_decode($peserta['surah'] ?? '[]', true);
         
         // Items Structure: ['id' => '...', 'label' => '...', 'meta' => '...']
@@ -150,8 +143,8 @@ class InputNilai extends BaseController
                     $sData = $this->alquranModel->where('no_surah', $sNo)->first();
                     if ($sData) {
                         $items[] = [
-                            'key' => 'tahfidz_wajib_' . $sNo, // Unique Key for input name
-                            'label' => "Wajib: " . $sData['nama_surah'] . " (Ayat 1-End)", // Simplified
+                            'key' => 'tahfidz_wajib_' . $sNo, // Kunci unik untuk nama input
+                            'label' => "Wajib: " . $sData['nama_surah'], // Simplified
                             'objek' => $sData['nama_surah'],
                             'objek_id' => $sNo
                         ];
@@ -172,8 +165,8 @@ class InputNilai extends BaseController
                 }
             }
         } else {
-            // Non-Tahfidz (e.g. Praktek Sholat, Tajwid)
-            // Usually just 1 item: The Subject itself.
+            // Non-Tahfidz (misal: Praktek Sholat, Tajwid)
+            // Biasanya hanya 1 item: Subjek itu sendiri.
             $items[] = [
                 'key' => 'general',
                 'label' => $juri['nama_grup_materi'] ?? 'Penilaian',
@@ -181,7 +174,7 @@ class InputNilai extends BaseController
                 'objek_id' => 0
             ];
             
-            // Special Case: Praktek Sholat might have surah sholat
+            // Kasus Khusus: Praktek Sholat mungkin memiliki surah sholat
              if (isset($juri['nama_grup_materi']) && stripos($juri['nama_grup_materi'], 'Sholat') !== false) {
                  if (!empty($surahJson['surah_sholat'])) {
                      $sNo = $surahJson['surah_sholat'];
@@ -198,8 +191,8 @@ class InputNilai extends BaseController
         
         // Render Partial View
         
-        // Check if graded by OTHER Juri (Conflict Check)
-        // Ensure one student is handled by only ONE Juri per Materi Group
+        // Cek jika dinilai oleh Juri LAIN (Cek Konflik)
+        // Pastikan satu siswa ditangani oleh HANYA SATU Juri per Grup Materi
         $idGrupMateri = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
         
         $otherGrade = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, j.nama_juri')
@@ -209,7 +202,7 @@ class InputNilai extends BaseController
                                        ->join('tbl_munaqosah_juri j', 'j.id = tbl_munaqosah_nilai_ujian.id_juri', 'left')
                                        ->first();
 
-        // Check for existing scores (My Scores)
+        // Cek nilai yang sudah ada (Nilai Saya)
         $existingScores = [];
         $scoresRaw = $this->nilaiModel->where('no_peserta', $noPeserta)
                                       ->where('id_juri', $juri['id'])
@@ -217,16 +210,16 @@ class InputNilai extends BaseController
         
         if (!empty($scoresRaw)) {
             foreach ($scoresRaw as $row) {
-                // Key format: [objek_penilaian][id_kriteria] => nilai
-                // We need to match the frontend input name format: nilai[item_key][id_kriteria]
-                // item_key logic: 
-                // if tahfidz: tahfidz_wajib_{objek} or tahfidz_pilihan_{objek}
-                // if general: general
+                // Format Key: [objek_penilaian][id_kriteria] => nilai
+                // Kita perlu mencocokkan format nama input frontend: nilai[item_key][id_kriteria]
+                // logika item_key:
+                // jika tahfidz: tahfidz_wajib_{objek} atau tahfidz_pilihan_{objek}
+                // jika general: general
                 
-                // Reverse mapping is tricky because we stored Objek ID/Name but not the prefix.
-                // However, we can map broadly or just use [id_kriteria] if unique enough (it isn't per item).
+                // Reverse mapping agak rumit karena kita menyimpan ID Objek/Nama tapi bukan prefixnya.
+                // Namun, kita bisa memetakan secara luas atau cukup gunakan [id_kriteria] jika cukup unik (tidak per item).
                 
-                // Let's group by Objek Penilaian
+                // Mari kita kelompokkan berdasarkan Objek Penilaian
                 $objek = $row['objek_penilaian'];
                 $kId = $row['id_kriteria'];
                 $val = $row['nilai'];
@@ -235,9 +228,9 @@ class InputNilai extends BaseController
             }
         }
 
-        // Determine Lock Status
-        // Only lock if someone else graded it AND I haven't graded it yet.
-        // If I have graded it, I should be able to see/edit my own data despite conflicts.
+        // Tentukan Status Kunci
+        // Hanya kunci jika orang lain sudah menilai DAN saya belum menilai.
+        // Jika saya sudah menilai, saya harusnya bisa melihat/mengedit data saya sendiri meskipun ada konflik.
         $isGraded = !empty($existingScores);
         $lockedByOther = ($otherGrade && !$isGraded) ? true : false;
         
@@ -268,7 +261,7 @@ class InputNilai extends BaseController
         if (!$juri) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
 
         $noPeserta = $this->request->getPost('no_peserta');
-        $nilaiData = $this->request->getPost('nilai'); // Array: [item_key][kriteria_id] => score
+        $nilaiData = $this->request->getPost('nilai'); // Array: [item_key][kriteria_id] => nilai
         $catatan = $this->request->getPost('catatan');
 
         if (empty($nilaiData)) {
@@ -278,7 +271,7 @@ class InputNilai extends BaseController
         $peserta = $this->pesertaModel->where('no_peserta', $noPeserta)->where('tahun_ajaran', $this->getTahunAjaran())->first();
         if(!$peserta) return $this->response->setJSON(['success' => false, 'message' => 'Data peserta invalid.']);
 
-        // Collect all Kriteria IDs to fetch their Materi ID
+        // Kumpulkan semua ID Kriteria untuk mengambil ID Materi mereka
         $allKriteriaIds = [];
         foreach ($nilaiData as $scores) {
             foreach ($scores as $kId => $val) {
@@ -297,8 +290,8 @@ class InputNilai extends BaseController
 
         $count = 0;
         foreach ($nilaiData as $itemKey => $kriteriaScores) {
-            // itemKey e.g. 'tahfidz_wajib_78' or 'general'
-            // Extract objek info
+            // itemKey misal 'tahfidz_wajib_78' atau 'general'
+            // Ekstrak info objek
             $objekPenilaian = '';
             
             if (strpos($itemKey, 'tahfidz') !== false) {
@@ -310,10 +303,10 @@ class InputNilai extends BaseController
             }
             
             foreach ($kriteriaScores as $kriteriaId => $score) {
-                // Determine ID Materi
+                // Tentukan ID Materi
                 $realMateriId = $mapKriteriaToMateri[$kriteriaId] ?? 0;
 
-                // Check exist
+                // Cek eksistensi
                 $exist = $this->nilaiModel->where([
                     'no_peserta' => $noPeserta,
                     'id_juri' => $juri['id'], 
@@ -330,9 +323,9 @@ class InputNilai extends BaseController
                     'id_juri' => $juri['id'], 
                     'tahun_ajaran' => $peserta['tahun_ajaran'],
                     'id_grup_materi' => $groupId,
-                    'id_grup_juri' => $juri['id_grup_juri'] ?? 0, // Save Grup Juri ID
+                    'id_grup_juri' => $juri['id_grup_juri'] ?? 0, // Simpan ID Grup Juri
                     'id_kriteria' => $kriteriaId,
-                    'id_materi' => $realMateriId, // Correctly populated
+                    'id_materi' => $realMateriId, // Terisi dengan benar
                     'objek_penilaian' => $objekPenilaian,
                     'nilai' => $score,
                     'catatan' => $catatan[$itemKey] ?? ''
@@ -363,7 +356,7 @@ class InputNilai extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Username dan Password wajib diisi.']);
         }
 
-        // Use UserModel to verify
+        // Gunakan UserModel untuk verifikasi
         $userModel = new \App\Models\UserModel();
         $user = $userModel->getUserByUsername($username);
 
@@ -375,8 +368,8 @@ class InputNilai extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Password salah.']);
         }
 
-        // Check Group (Kepala or Admin)
-        // Need to refetch user with groups or check manually
+        // Cek Grup (Kepala atau Admin)
+        // Perlu mengambil ulang user dengan grup atau cek manual
         $userWithGroups = $userModel->getUserWithGroups($user['id']);
         $groups = array_column($userWithGroups['groups'], 'name');
 
@@ -390,7 +383,7 @@ class InputNilai extends BaseController
     private function getJuriInfo()
     {
         $userId = $this->getCurrentUser()['id'];
-        return $this->juriModel->select('tbl_munaqosah_juri.*, gm.nama_grup_materi, gm.id as grup_materi_id_int')
+        return $this->juriModel->select('tbl_munaqosah_juri.*, gm.nama_grup_materi, gm.id as grup_materi_id_int, gm.kondisional_set')
                                ->where('user_id', $userId)
                                ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_juri.id_grup_materi', 'left')
                                ->first();
@@ -413,7 +406,7 @@ class InputNilai extends BaseController
         } else {
             $no = 1;
             foreach ($listDinilai as $d) {
-                // Parse Time
+                // Parse Waktu
                 $time = \CodeIgniter\I18n\Time::parse($d['tgl_nilai'])->humanize();
                 $html .= '<tr>
                     <td class="text-center">'. $no++ .'</td>
@@ -449,13 +442,13 @@ class InputNilai extends BaseController
         $tahunAjaran = $this->getTahunAjaran();
         $idGrupMateri = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
         
-        // Filter by Room ID (id_grup_juri) to ensure only participants assigned to THIS Juri's room are shown
+        // Filter berdasarkan ID Ruangan (id_grup_juri) untuk memastikan hanya peserta yang ditugaskan ke ruangan Juri INI yang ditampilkan
         $roomId = $juri['id_grup_juri'];
 
         if (!$roomId) {
-             // Fallback if Juri has no room assigned yet (should not happen in new logic)
-             // But let's return empty to be safe, or allow fallback?
-             // Safest is to return nothing if no room assigned.
+             // Fallback jika Juri belum memiliki ruangan yang ditugaskan (seharusnya tidak terjadi di logika baru)
+             // Tapi mari kita kembalikan kosong untuk aman, atau izinkan fallback?
+             // Paling aman adalah tidak mengembalikan apa pun jika tidak ada ruangan.
              return $this->response->setJSON(['success' => true, 'hasPeserta' => false]);
         }
         
@@ -491,7 +484,7 @@ class InputNilai extends BaseController
             ])->first();
             
             if (!$exist) {
-                // Found one!
+                // Ketemu satu!
                 $validCandidate = $candidate;
                 break;
             }

@@ -10,4 +10,8 @@ deployment:
     # Copy Public Assets (Folders Only) - EXCLUDING index.php
     - /bin/cp -R public/js $PUBLICPATH
     - /bin/cp -R public/template $PUBLICPATH
+    # Copy public assset quran dan font
+    - /bin/cp -R public/assets $PUBLICPATH
+ 
+
 
