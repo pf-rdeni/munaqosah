@@ -30,9 +30,8 @@
                             <th width="5%">No</th>
                             <th>Nama Juri</th>
                             <th>Grup Juri</th>
-                            <th>Materi Ujian</th>
-                            <th>Kriteria</th>
-                            <th width="12%" class="text-center">Aksi</th>
+                            <th>Materi & Kriteria</th>
+                            <th class="text-center" style="min-width: 280px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -57,49 +56,54 @@
                                             7 => 'badge-lightblue',
                                             8 => 'badge-navy',
                                             9 => 'badge-purple',
-                                            10 => 'badge-pink'
+                                            10 => 'badge-pink',
+                                            11 => 'badge-primary', 12 => 'badge-success', 13=>'badge-danger', 14=>'badge-warning', 15=>'badge-info',
+                                            16 => 'badge-indigo', 17 => 'badge-lightblue', 18=>'badge-navy', 19=>'badge-purple', 20=>'badge-pink'
                                         ];
                                         $badgeClass = $badges[$grupId] ?? 'badge-secondary';
-                                        $grupName = ($grupId > 0) ? "Grup $grupId" : "-";
+                                        $grupName = ($grupId > 0) ? "Grup $grupId" : "Tanpa Grup";
                                     ?>
                                     <span class="badge <?= $badgeClass ?>" style="font-size: 1em;"><?= $grupName ?></span>
                                 </td>
                                 <td>
-                                    <span class="badge badge-info"><?= esc($juri['nama_grup_materi'] ?? '-') ?></span>
-                                </td>
-                                <td>
+                                    <h6 class="font-weight-bold text-info mb-2"><?= esc($juri['nama_grup_materi'] ?? '-') ?></h6>
+                                    
                                     <?php if (!empty($juri['kriteria_custom']) && !empty($juri['kriteria_names'])): ?>
+                                        <div style="line-height:1.6;">
                                         <?php foreach ($juri['kriteria_names'] as $kName): ?>
-                                            <span class="badge badge-warning mb-1"><?= esc($kName) ?></span>
+                                            <span class="badge badge-light border border-secondary text-secondary font-weight-normal mr-1"><?= esc($kName) ?></span>
                                         <?php endforeach; ?>
-                                        <small class="text-muted d-block">(<?= $juri['kriteria_count'] ?>/<?= $juri['kriteria_total'] ?>)</small>
+                                        </div>
+                                        <small class="text-muted d-block mt-1"><i class="fas fa-filter mr-1"></i> (<?= $juri['kriteria_count'] ?>/<?= $juri['kriteria_total'] ?> Kriteria)</small>
                                     <?php else: ?>
-                                        <span class="badge badge-success">Semua Kriteria</span>
+                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Semua Kriteria</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <a href="<?= base_url('backend/juri/edit/' . $juri['id']) ?>" class="btn btn-warning btn-xs" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-info btn-xs btn-set-kriteria" 
-                                            data-id="<?= $juri['id'] ?>"
-                                            data-nama="<?= esc($juri['nama_juri']) ?>"
-                                            title="Setting Kriteria">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-primary btn-xs btn-set-grup"
-                                            data-id="<?= $juri['id'] ?>"
-                                            data-nama="<?= esc($juri['nama_juri']) ?>"
-                                            data-grup="<?= $juri['id_grup_juri'] ?? 0 ?>"
-                                            title="Setting Grup Juri">
-                                        <i class="fas fa-users"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-secondary btn-xs" onclick="confirmReset('<?= base_url('backend/juri/reset-password/' . $juri['id']) ?>')" title="Reset Password">
-                                        <i class="fas fa-key"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('<?= base_url('backend/juri/delete/' . $juri['id']) ?>')" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="<?= base_url('backend/juri/edit/' . $juri['id']) ?>" class="btn btn-warning" title="Edit">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </a>
+                                        <button type="button" class="btn btn-info btn-set-kriteria" 
+                                                data-id="<?= $juri['id'] ?>"
+                                                data-nama="<?= esc($juri['nama_juri']) ?>"
+                                                title="Setting Kriteria">
+                                            <i class="fas fa-cog mr-1"></i>Set
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-set-grup"
+                                                data-id="<?= $juri['id'] ?>"
+                                                data-nama="<?= esc($juri['nama_juri']) ?>"
+                                                data-grup="<?= $juri['id_grup_juri'] ?? 0 ?>"
+                                                title="Setting Grup Juri">
+                                            <i class="fas fa-users mr-1"></i>Grup
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="confirmReset('<?= base_url('backend/juri/reset-password/' . $juri['id']) ?>')" title="Reset Password">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" onclick="confirmDelete('<?= base_url('backend/juri/delete/' . $juri['id']) ?>')" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -179,10 +183,10 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Pilih Grup Juri (1-10)</label>
+                        <label>Pilih Grup Juri (1-20)</label>
                         <select class="form-control" name="id_grup_juri" id="idGrupJuriSelect">
-                            <option value="0">- Pilih Grup -</option>
-                            <?php for($i=1; $i<=10; $i++): ?>
+                            <option value="0">Tanpa Grup</option>
+                            <?php for($i=1; $i<=20; $i++): ?>
                                 <option value="<?= $i ?>">Grup <?= $i ?></option>
                             <?php endfor; ?>
                         </select>

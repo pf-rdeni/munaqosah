@@ -195,7 +195,7 @@ class InputNilai extends BaseController
         // Pastikan satu siswa ditangani oleh HANYA SATU Juri per Grup Materi
         $idGrupMateri = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
         
-        $otherGrade = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, j.nama_juri')
+        $otherGrade = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, j.nama_juri, j.id_grup_juri as other_grup_juri')
                                        ->where('no_peserta', $noPeserta)
                                        ->where('tbl_munaqosah_nilai_ujian.id_grup_materi', $idGrupMateri)
                                        ->where('tbl_munaqosah_nilai_ujian.id_juri !=', $juri['id'])
@@ -204,26 +204,32 @@ class InputNilai extends BaseController
 
         // Cek nilai yang sudah ada (Nilai Saya)
         $existingScores = [];
-        $scoresRaw = $this->nilaiModel->where('no_peserta', $noPeserta)
+        // Join with Materi to get Max Value for reverse calculation
+        $scoresRaw = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, m.nilai_maksimal')
+                                      ->join('tbl_munaqosah_materi_ujian m', 'm.id = tbl_munaqosah_nilai_ujian.id_materi', 'left')
+                                      ->where('no_peserta', $noPeserta)
                                       ->where('id_juri', $juri['id'])
                                       ->findAll();
         
+        $juriCondition = $juri['kondisional_set'];
+
         if (!empty($scoresRaw)) {
             foreach ($scoresRaw as $row) {
                 // Format Key: [objek_penilaian][id_kriteria] => nilai
-                // Kita perlu mencocokkan format nama input frontend: nilai[item_key][id_kriteria]
-                // logika item_key:
-                // jika tahfidz: tahfidz_wajib_{objek} atau tahfidz_pilihan_{objek}
-                // jika general: general
                 
-                // Reverse mapping agak rumit karena kita menyimpan ID Objek/Nama tapi bukan prefixnya.
-                // Namun, kita bisa memetakan secara luas atau cukup gunakan [id_kriteria] jika cukup unik (tidak per item).
-                
-                // Mari kita kelompokkan berdasarkan Objek Penilaian
                 $objek = $row['objek_penilaian'];
                 $kId = $row['id_kriteria'];
                 $val = $row['nilai'];
                 
+                // Logic Reverse for Display
+                if ($juriCondition === 'nilai_pengurangan') {
+                    $max = $row['nilai_maksimal'] ?? 100;
+                    // DB has Final Score (e.g. 85). Display should be Penalty (15).
+                    // Penalty = Max - Final
+                    $val = $max - $val;
+                    if ($val < 0) $val = 0; // Should not happen ideally
+                }
+
                 $existingScores[$objek][$kId] = $val;
             }
         }
@@ -231,8 +237,22 @@ class InputNilai extends BaseController
         // Tentukan Status Kunci
         // Hanya kunci jika orang lain sudah menilai DAN saya belum menilai.
         // Jika saya sudah menilai, saya harusnya bisa melihat/mengedit data saya sendiri meskipun ada konflik.
+        // MODIFIKASI: Ijinkan jika Juri tersebut SATU GRUP (Grup Juri > 0)
+        
         $isGraded = !empty($existingScores);
-        $lockedByOther = ($otherGrade && !$isGraded) ? true : false;
+        $lockedByOther = false;
+        
+        if ($otherGrade && !$isGraded) {
+             $myGrupJuri = $juri['id_grup_juri'] ?? 0;
+             $otherGrupJuri = $otherGrade['other_grup_juri'] ?? 0;
+             
+             // Jika Grup Valid (1-20) DAN Sama -> Allow
+             if ($myGrupJuri > 0 && $myGrupJuri == $otherGrupJuri) {
+                 $lockedByOther = false;
+             } else {
+                 $lockedByOther = true;
+             }
+        }
         
         $data = [
             'peserta' => $peserta,
@@ -306,6 +326,43 @@ class InputNilai extends BaseController
                 // Tentukan ID Materi
                 $realMateriId = $mapKriteriaToMateri[$kriteriaId] ?? 0;
 
+                // Check Group/Condition Logic
+                 $groupId = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
+                 if(!is_numeric($groupId)) $groupId = 0;
+                 
+                 // Fetch Condition (Cache for performance)
+                 static $groupConditionCache = [];
+                 if (!isset($groupConditionCache[$groupId])) {
+                      $gm = (new \App\Models\Munaqosah\GrupMateriModel())->find($groupId);
+                      $groupConditionCache[$groupId] = $gm ? $gm['kondisional_set'] : 'nilai_default';
+                 }
+                 $condition = $groupConditionCache[$groupId];
+
+                 $finalScore = $score;
+                 if ($condition === 'nilai_pengurangan') {
+                     // Fetch Max Score for this specific materi/kriteria
+                     // We need to look up $kriteriaInfos again or map it effectively.
+                     // Optimization: Build a map [kriteriaId => maxVal] beforehand.
+                     // Since we didn't do it above, let's just fetch efficiently or rely on what we have.
+                     // Ideally we should have fetched it with $mapKriteriaToMateri.
+                     
+                     // Let's optimize the lookup above first (in the block before loop) or query here.
+                     // For safety, let's query individually or use a prepared map if possible.
+                     // The $kriteriaInfos above fetched `id_materi`, let's also fetch `nilai_maksimal`.
+                 }
+                 
+                 // Simplified Logic: Fetch Max Value if needed
+                 if ($condition === 'nilai_pengurangan') {
+                     // Get Max Value from Materi or Kriteria? Usually Materi has max value.
+                     // We have $realMateriId.
+                     $materiInfo = (new \App\Models\Munaqosah\MateriModel())->find($realMateriId);
+                     $maxVal = $materiInfo ? $materiInfo['nilai_maksimal'] : 100;
+                     
+                     $finalScore = $maxVal - $score;
+                     if ($finalScore < 0) $finalScore = 0;
+                 }
+
+
                 // Cek eksistensi
                 $exist = $this->nilaiModel->where([
                     'no_peserta' => $noPeserta,
@@ -314,20 +371,17 @@ class InputNilai extends BaseController
                     'objek_penilaian' => $objekPenilaian
                 ])->first();
 
-                $groupId = $juri['grup_materi_id_int'] ?? $juri['id_grup_materi'];
-                if(!is_numeric($groupId)) $groupId = 0; 
-
                 $saveData = [
                     'no_peserta' => $noPeserta,
                     'nisn' => $peserta['nisn'],
                     'id_juri' => $juri['id'], 
                     'tahun_ajaran' => $peserta['tahun_ajaran'],
                     'id_grup_materi' => $groupId,
-                    'id_grup_juri' => $juri['id_grup_juri'] ?? 0, // Simpan ID Grup Juri
+                    'id_grup_juri' => $juri['id_grup_juri'] ?? 0, 
                     'id_kriteria' => $kriteriaId,
-                    'id_materi' => $realMateriId, // Terisi dengan benar
+                    'id_materi' => $realMateriId, 
                     'objek_penilaian' => $objekPenilaian,
-                    'nilai' => $score,
+                    'nilai' => $finalScore, // Saved the FINAL score
                     'catatan' => $catatan[$itemKey] ?? ''
                 ];
 

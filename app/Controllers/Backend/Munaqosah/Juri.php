@@ -516,8 +516,8 @@ class Juri extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Data Juri invalid']);
         }
 
-        if (!is_numeric($idGrupJuri) || $idGrupJuri < 1 || $idGrupJuri > 10) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Grup Juri harus antara 1-10']);
+        if (!is_numeric($idGrupJuri) || $idGrupJuri < 0 || $idGrupJuri > 20) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Grup Juri harus antara 0-20 (0 = Tanpa Grup)']);
         }
 
         $this->juriModel->update($juriId, ['id_grup_juri' => $idGrupJuri]);

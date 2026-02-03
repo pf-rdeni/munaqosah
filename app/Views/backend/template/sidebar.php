@@ -56,6 +56,16 @@
                     </a>
                 </li>
                 <?php endif; ?>
+                
+                <?php if (in_array('admin', $userGroups) || in_array('operator', $userGroups) || in_array('kepala', $userGroups)): ?>
+                <!-- Monitoring Nilai -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/monitoring/nilai') ?>" class="nav-link <?= strpos(uri_string(), 'monitoring/nilai') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>Monitoring Nilai</p>
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
                 <li class="nav-header">ANTRIAN UJIAN</li>
@@ -115,6 +125,13 @@
                     <a href="<?= base_url('backend/users') ?>" class="nav-link <?= strpos(uri_string(), 'backend/users') !== false ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users-cog"></i>
                         <p>Pengaturan User</p>
+                    </a>
+                </li>
+                <!-- Reset Nilai (Admin Only) -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/setting/reset-nilai') ?>" class="nav-link <?= strpos(uri_string(), 'reset-nilai') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-trash-restore"></i>
+                        <p>Reset Nilai</p>
                     </a>
                 </li>
                 <?php endif; ?>

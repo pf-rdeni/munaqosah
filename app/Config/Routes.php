@@ -51,6 +51,13 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('users/update/(:num)', 'Users::update/$1');
     $routes->get('users/delete/(:num)', 'Users::delete/$1');
 
+    // Setting
+    $routes->group('setting', function($routes) {
+        $routes->get('reset-nilai', 'Munaqosah\ResetNilai::index');
+        $routes->post('reset-nilai/preview', 'Munaqosah\ResetNilai::preview');
+        $routes->post('reset-nilai/execute', 'Munaqosah\ResetNilai::execute');
+    });
+
     // Manajemen Juri
     $routes->get('juri', 'Munaqosah\Juri::index');
     $routes->get('juri/create', 'Munaqosah\Juri::create');
@@ -94,6 +101,9 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('peserta/saveTahfidzPilihan', 'Munaqosah\Peserta::saveTahfidzPilihan');
     $routes->get('peserta/printKartu', 'Munaqosah\Peserta::printKartu');
     $routes->get('peserta/printKartu/(:segment)', 'Munaqosah\Peserta::printKartu/$1');
+
+    // Monitoring Nilai
+    $routes->get('monitoring/nilai', 'Munaqosah\MonitoringNilai::index');
 
     // Input Nilai (Juri)
     $routes->get('munaqosah/input-nilai', 'Munaqosah\InputNilai::index');

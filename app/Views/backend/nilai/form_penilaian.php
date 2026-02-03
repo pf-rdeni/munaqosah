@@ -178,6 +178,7 @@
                                                                name="nilai[<?= $item['key'] ?>][<?= $k['id'] ?>]" 
                                                                min="0" 
                                                                <?= $maxAttr ?>
+                                                               data-max="<?= $maxVal ?>"
                                                                value="<?= $currentVal ?>"
                                                                required
                                                                <?= $disabledAttr ?>>
@@ -420,14 +421,21 @@
                 
                 inputs.each(function() {
                     let kriteriaName = $(this).closest('tr').find('td:first strong').text();
-                    let val = $(this).val();
-                    let suffix = ''; // Suffix removed from UI
+                    let val = parseFloat($(this).val()) || 0;
+                    let maxVal = parseFloat($(this).data('max')) || 100;
+                    let displayVal = val;
+                    let suffix = ''; 
                     
-                    // Bersihkan suffix untuk tampilan
-                    if(suffix.includes('Salah')) suffix = ' Salah';
-                    else if(suffix.includes('/')) suffix = ''; // Hanya tampilkan nilai mentah untuk nilai normal
+                    if (mode === 'nilai_pengurangan') {
+                        let finalScore = maxVal - val;
+                        // Show: Kesalahan (15) => Nilai (85)
+                        displayVal = `Kesalahan: ${val} <i class="fas fa-arrow-right mx-1"></i> Nilai: <strong>${finalScore}</strong>`;
+                    } else {
+                        // Nilai Biasa
+                        displayVal = `<strong>${val}</strong>`;
+                    }
                     
-                    summaryHtml += '<div>- ' + kriteriaName + ': <strong>' + val + suffix + '</strong></div>';
+                    summaryHtml += '<div>- ' + kriteriaName + ': ' + displayVal + '</div>';
                 });
                 
                 summaryHtml += '</td></tr>';
