@@ -92,6 +92,8 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('peserta/reset', 'Munaqosah\Peserta::reset');
     $routes->post('peserta/saveSettings', 'Munaqosah\Peserta::saveSettings');
     $routes->post('peserta/saveTahfidzPilihan', 'Munaqosah\Peserta::saveTahfidzPilihan');
+    $routes->get('peserta/printKartu', 'Munaqosah\Peserta::printKartu');
+    $routes->get('peserta/printKartu/(:segment)', 'Munaqosah\Peserta::printKartu/$1');
 
     // Input Nilai (Juri)
     $routes->get('munaqosah/input-nilai', 'Munaqosah\InputNilai::index');

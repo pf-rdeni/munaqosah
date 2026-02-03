@@ -317,4 +317,40 @@ class Peserta extends BaseController
     }
 
 
+    /**
+     * Print Kartu Ujian (Single or All)
+     * @param string|null $nisn
+     */
+    public function printKartu($nisn = null)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('/login');
+        }
+
+        $tahunAjaran = $this->getTahunAjaran();
+        
+        $builder = $this->pesertaModel
+            ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.jenis_kelamin, s.foto, s.hafalan, s.no_hp')
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'left')
+            ->where('tahun_ajaran', $tahunAjaran);
+
+        if ($nisn) {
+            $builder->where('tbl_munaqosah_peserta.nisn', $nisn);
+            $peserta = $builder->findAll(); // Still return array for consistent view handling
+        } else {
+            $builder->orderBy('no_peserta', 'ASC');
+            $peserta = $builder->findAll();
+        }
+
+        if (empty($peserta)) {
+            return redirect()->back()->with('error', 'Data peserta tidak ditemukan.');
+        }
+
+        $data = [
+            'peserta' => $peserta,
+            'tahunAjaran' => $tahunAjaran
+        ];
+
+        return view('backend/peserta/print_kartu', $data);
+    }
 }

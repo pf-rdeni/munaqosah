@@ -84,6 +84,11 @@
                     Undian No Tes - Tahun Ajaran <?= $tahunAjaran ?>
                 </h3>
                 <div class="card-tools">
+                    <?php if ($pesertaTerdaftar > 0): ?>
+                        <a href="<?= base_url('backend/peserta/printKartu') ?>" target="_blank" class="btn btn-secondary btn-sm mr-2">
+                            <i class="fas fa-print"></i> Cetak Semua
+                        </a>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-default btn-sm mr-2" onclick="location.reload()">
                         <i class="fas fa-sync-alt"></i> Refresh Data
                     </button>
@@ -273,6 +278,10 @@
                                                 <i class="fab fa-whatsapp"></i>
                                             </button>
                                         <?php endif; ?>
+                                        
+                                        <a href="<?= base_url('backend/peserta/printKartu/' . $peserta['nisn']) ?>" target="_blank" class="btn btn-info btn-sm" title="Cetak Kartu">
+                                            <i class="fas fa-print"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
