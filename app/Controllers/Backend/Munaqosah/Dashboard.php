@@ -117,7 +117,7 @@ class Dashboard extends BaseController
 
                      // 2. Ambil Materi dalam Grup ini
                      $materiList = $this->materiModel->where('id_grup_materi', $juriData['id_grup_materi'])
-                                                     ->orderBy('id_materi', 'ASC')
+                                                     ->orderBy('id', 'ASC') // Change from id_materi to id just in case
                                                      ->findAll();
 
                      foreach ($materiList as $m) {
