@@ -29,6 +29,9 @@ class Dashboard extends BaseController
     protected $grupMateriModel;
     protected $kriteriaModel;
 
+    protected $juriModel;
+    protected $antrianModel;
+
     public function __construct()
     {
         $this->siswaModel      = new SiswaModel();
@@ -37,6 +40,8 @@ class Dashboard extends BaseController
         $this->materiModel     = new MateriModel();
         $this->grupMateriModel = new GrupMateriModel();
         $this->kriteriaModel   = new KriteriaModel();
+        $this->juriModel       = new \App\Models\Munaqosah\JuriModel();
+        $this->antrianModel    = new \App\Models\Munaqosah\AntrianModel();
     }
 
     /**
@@ -52,8 +57,105 @@ class Dashboard extends BaseController
         }
 
         // Ambil statistik
-        $tahunAjaran = date('Y') . '/' . (date('Y') + 1);
+        $tahunAjaran = $this->getTahunAjaran(); // Dynamic from BaseController
         
+        // Gender Calculation
+        $genderL = $this->pesertaModel->select('tbl_munaqosah_peserta.id')
+                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn')
+                        ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
+                        ->where('tbl_munaqosah_siswa.jenis_kelamin', 'L')
+                        ->countAllResults();
+
+        $genderP = $this->pesertaModel->select('tbl_munaqosah_peserta.id')
+                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn')
+                        ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
+                        ->where('tbl_munaqosah_siswa.jenis_kelamin', 'P')
+                        ->countAllResults();
+
+        $totalPeserta   = $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->countAllResults();
+        
+        // Restore variable needed for view (backward compatibility)
+        $pesertaDinilai = $this->nilaiModel->countPesertaDinilai($tahunAjaran);
+
+        // Helper status counts
+        $statusCounts = $this->antrianModel->getStatusCounts($tahunAjaran);
+        $statMenunggu   = $statusCounts[0] ?? 0;
+        $statProses     = $statusCounts[1] ?? 0; // Sedang Ujian + Dipanggil
+        $statSelesai    = $statusCounts[2] ?? 0;
+        
+        // Calculate percentages
+        $totalRegistered = $statMenunggu + $statProses + $statSelesai;
+        // Fallback to totalPeserta if antrian records missing (should match theoretically)
+        if ($totalRegistered == 0) $totalRegistered = $totalPeserta; 
+        
+        $percentSelesai = $totalRegistered > 0 ? ($statSelesai / $totalRegistered) * 100 : 0;
+        $percentProses  = $totalRegistered > 0 ? ($statProses / $totalRegistered) * 100 : 0;
+        // Residual for grey area (Belum)
+        $percentBelum   = 100 - ($percentSelesai + $percentProses); // Can also use ($statMenunggu / total) * 100
+
+        $progressPercent = round($percentSelesai, 1); // Main indicator is "Done"
+
+        // Data Khusus Juri
+        $listDinilai = [];
+        $rubrikType = null; // Default
+
+        if (in_array('juri', $this->getCurrentUser()['groups'])) {
+             // Cari ID Juri berdasarkan User ID
+             $juriData = $this->juriModel->where('user_id', $this->session->get('user_id'))->first();
+             if ($juriData) {
+                 $listDinilai = $this->nilaiModel->getPesertaDinilaiByJuri($juriData['id'], $tahunAjaran);
+                 
+                 // Identifikasi Tipe Rubrik berdasarkan Grup Materi
+                 if (!empty($juriData['id_grup_materi'])) {
+                     $grupMateri = $this->grupMateriModel->find($juriData['id_grup_materi']);
+                     if ($grupMateri) {
+                         $namaGrup = strtolower($grupMateri['nama_grup_materi']);
+                         if (strpos($namaGrup, 'wudhu') !== false) {
+                             $rubrikType = 'wudhu';
+                         } elseif (strpos($namaGrup, 'sholat') !== false || strpos($namaGrup, 'salat') !== false) {
+                             $rubrikType = 'sholat';
+                         }
+                     }
+                 }
+
+                 // Calculate Duration
+                 $count = count($listDinilai);
+                 for ($i = 0; $i < $count; $i++) {
+                     $current = $listDinilai[$i];
+                     $duration = '-';
+                     $source = ''; // Debug/Info
+
+                     // 1. Priority: Queue Times (Real Exam Duration)
+                     if (!empty($current['waktu_mulai']) && !empty($current['waktu_selesai'])) {
+                         $start = strtotime($current['waktu_mulai']);
+                         $end   = strtotime($current['waktu_selesai']);
+                         if ($end > $start) {
+                             $mins = floor(($end - $start) / 60);
+                             $secs = ($end - $start) % 60;
+                             $duration = $mins . 'm ' . $secs . 's';
+                         }
+                     } 
+                     // 2. Fallback: Gap between Submissions (Session Pace)
+                     // Since list is DESC (Latest first), the "Previous" participant is at $i + 1
+                     else if (isset($listDinilai[$i + 1])) {
+                         $prev = $listDinilai[$i + 1];
+                         $currentTime = strtotime($current['tgl_nilai']);
+                         $prevTime    = strtotime($prev['tgl_nilai']);
+                         $diff = $currentTime - $prevTime;
+
+                         // Validasi: Jika beda waktu masuk akal (misal < 60 menit)
+                         if ($diff > 0 && $diff < 3600) { 
+                             $mins = floor($diff / 60);
+                             $secs = $diff % 60;
+                             $duration = '~' . $mins . 'm ' . $secs . 's'; // Tilde indicates estimate
+                         }
+                     }
+
+                     $listDinilai[$i]['lama_ujian'] = $duration;
+                 }
+             }
+        }
+
         $data = [
             'title'        => 'Dashboard',
             'pageTitle'    => 'Dashboard',
@@ -62,10 +164,19 @@ class Dashboard extends BaseController
                 ['title' => 'Dashboard', 'url' => ''],
             ],
             'user'         => $this->getCurrentUser(),
+            'listDinilai'  => $listDinilai,
+            'rubrikType'   => $rubrikType, // Pass to view
             'statistik'    => [
                 'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif'),
-                'totalPeserta'    => $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->countAllResults(),
-                'pesertaDinilai'  => $this->nilaiModel->countPesertaDinilai($tahunAjaran),
+                'totalPeserta'    => $totalPeserta,
+                'pesertaDinilai'  => $pesertaDinilai, // Keep original for backwards compat or specific widget
+                'statSelesai'     => $statSelesai,
+                'statProses'      => $statProses,
+                'statMenunggu'    => $statMenunggu,
+                'progressPercent' => round($progressPercent, 1),
+                'percentProses'   => round($percentProses, 1),
+                'genderL'         => $genderL,
+                'genderP'         => $genderP,
                 'totalMateri'     => $this->materiModel->countAllResults(),
                 'totalGrupMateri' => $this->grupMateriModel->countAllResults(),
                 'totalKriteria'   => $this->kriteriaModel->countAllResults(),

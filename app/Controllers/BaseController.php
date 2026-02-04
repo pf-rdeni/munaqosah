@@ -108,19 +108,19 @@ abstract class BaseController extends Controller
             return null;
         }
 
+        // Ambil data terbaru dari DB untuk memastikan foto profile update
+        $dbUser = $this->db->table('users')->select('user_image')->where('id', $this->session->get('user_id'))->get()->getRowArray();
+
         $currentUser = [
             'id'       => $this->session->get('user_id'),
             'username' => $this->session->get('username'),
             'fullname' => $this->session->get('fullname'),
             'email'    => $this->session->get('email'),
+            'user_image' => $dbUser['user_image'] ?? null,
             'groups'   => $this->session->get('groups') ?? [],
         ];
 
-        // Custom Display for Juri
-        if (in_array('juri', $currentUser['groups'])) {
-             // User requested: "Juri - [username]"
-             $currentUser['fullname'] = $currentUser['username'];
-        }
+
 
         return $currentUser;
     }

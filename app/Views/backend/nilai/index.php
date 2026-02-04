@@ -147,6 +147,17 @@
             $('#no_peserta').val(noPeserta);
             $('#form-search-peserta').submit();
         });
+
+        // Auto-Load from URL Parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const pesertaParam = urlParams.get('peserta');
+        if (pesertaParam) {
+            $('#no_peserta').val(pesertaParam);
+            // Delay slightly to ensure everything loaded
+            setTimeout(() => {
+                $('#form-search-peserta').submit();
+            }, 500);
+        }
     });
 
     // Global function to refresh history

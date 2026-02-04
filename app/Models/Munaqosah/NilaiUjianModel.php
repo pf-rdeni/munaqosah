@@ -140,9 +140,10 @@ class NilaiUjianModel extends Model
      */
     public function getPesertaDinilaiByJuri($idJuri, $tahunAjaran)
     {
-        return $this->select('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn, MAX(tbl_munaqosah_nilai_ujian.created_at) as tgl_nilai, MAX(tbl_munaqosah_nilai_ujian.id_grup_materi) as id_grup_materi')
+        return $this->select('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn, MAX(tbl_munaqosah_nilai_ujian.created_at) as tgl_nilai, MAX(tbl_munaqosah_nilai_ujian.id_grup_materi) as id_grup_materi, MAX(a.waktu_mulai) as waktu_mulai, MAX(a.waktu_selesai) as waktu_selesai')
                     ->join('tbl_munaqosah_peserta p', 'p.no_peserta = tbl_munaqosah_nilai_ujian.no_peserta AND p.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran', 'left')
                     ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_nilai_ujian.nisn', 'left')
+                    ->join('tbl_munaqosah_antrian a', 'a.no_peserta = tbl_munaqosah_nilai_ujian.no_peserta AND a.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran AND a.id_grup_materi = tbl_munaqosah_nilai_ujian.id_grup_materi', 'left')
                     ->where('tbl_munaqosah_nilai_ujian.id_juri', $idJuri)
                     ->where('tbl_munaqosah_nilai_ujian.tahun_ajaran', $tahunAjaran)
                     ->groupBy('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn')

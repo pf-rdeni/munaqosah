@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $title ?? 'Login - Munaqosah SDIT An-Nahl' ?></title>
+    <link rel="icon" href="<?= base_url('assets/icon/logo_sdit_annahl.png') ?>" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="<?= base_url('assets/icon/logo_sdit_annahl.png') ?>">
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">

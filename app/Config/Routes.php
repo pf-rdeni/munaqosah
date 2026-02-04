@@ -132,4 +132,9 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
         $routes->get('konfigurasi', 'Munaqosah\Dokumentasi::konfigurasi');
         $routes->get('penjurian', 'Munaqosah\Dokumentasi::penjurian');
     });
+
+    // Profil User
+    $routes->get('profil', 'Profil::index');
+    $routes->post('profil/update', 'Profil::update');
+    $routes->post('profil/updateFoto', 'Profil::updateFoto');
 });
