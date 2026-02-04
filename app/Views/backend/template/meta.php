@@ -12,7 +12,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="<?= base_url('template/backend/plugins/fontawesome-free/css/all.min.css') ?>">
     
-    <!-- Theme style AdminLTE -->
+    <!-- Theme style -->
     <link rel="stylesheet" href="<?= base_url('template/backend/dist/css/adminlte.min.css') ?>">
     
     <!-- DataTables -->
