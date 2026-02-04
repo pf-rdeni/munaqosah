@@ -31,6 +31,8 @@ class Dashboard extends BaseController
 
     protected $juriModel;
     protected $antrianModel;
+    protected $predikatModel;
+    protected $rubrikModel;
 
     public function __construct()
     {
@@ -42,6 +44,8 @@ class Dashboard extends BaseController
         $this->kriteriaModel   = new KriteriaModel();
         $this->juriModel       = new \App\Models\Munaqosah\JuriModel();
         $this->antrianModel    = new \App\Models\Munaqosah\AntrianModel();
+        $this->predikatModel   = new \App\Models\Munaqosah\PredikatModel();
+        $this->rubrikModel     = new \App\Models\Munaqosah\RubrikModel();
     }
 
     /**
@@ -95,9 +99,10 @@ class Dashboard extends BaseController
 
         $progressPercent = round($percentSelesai, 1); // Main indicator is "Done"
 
-        // Data Khusus Juri
+        // Data Rubrik Dinamis
+        $rubrikData  = [];
+        $predikats   = [];
         $listDinilai = [];
-        $rubrikType = null; // Default
 
         if (in_array('juri', $this->getCurrentUser()['groups'])) {
              // Cari ID Juri berdasarkan User ID
@@ -105,16 +110,35 @@ class Dashboard extends BaseController
              if ($juriData) {
                  $listDinilai = $this->nilaiModel->getPesertaDinilaiByJuri($juriData['id'], $tahunAjaran);
                  
-                 // Identifikasi Tipe Rubrik berdasarkan Grup Materi
+                 // Ambil Rubrik berdasarkan Grup Materi Juri
                  if (!empty($juriData['id_grup_materi'])) {
-                     $grupMateri = $this->grupMateriModel->find($juriData['id_grup_materi']);
-                     if ($grupMateri) {
-                         $namaGrup = strtolower($grupMateri['nama_grup_materi']);
-                         if (strpos($namaGrup, 'wudhu') !== false) {
-                             $rubrikType = 'wudhu';
-                         } elseif (strpos($namaGrup, 'sholat') !== false || strpos($namaGrup, 'salat') !== false) {
-                             $rubrikType = 'sholat';
+                     // 1. Ambil Predikat Global
+                     $predikats = $this->predikatModel->getAll();
+
+                     // 2. Ambil Materi dalam Grup ini
+                     $materiList = $this->materiModel->where('id_grup_materi', $juriData['id_grup_materi'])
+                                                     ->orderBy('id_materi', 'ASC')
+                                                     ->findAll();
+
+                     foreach ($materiList as $m) {
+                         // Ambil Kriteria per Materi
+                         $kriteria = $this->kriteriaModel->getByMateri($m['id']);
+                         if (empty($kriteria)) continue;
+
+                         $kriteriaIds = array_column($kriteria, 'id');
+                         $rubriks = $this->rubrikModel->getRubrikByKriteria($kriteriaIds);
+                         
+                         // Map Rubrik
+                         $map = [];
+                         foreach ($rubriks as $r) {
+                             $map[$r['id_kriteria']][$r['id_predikat']] = $r['deskripsi'];
                          }
+
+                         $rubrikData[] = [
+                             'materi'   => $m,
+                             'kriteria' => $kriteria,
+                             'map'      => $map
+                         ];
                      }
                  }
 
@@ -165,7 +189,8 @@ class Dashboard extends BaseController
             ],
             'user'         => $this->getCurrentUser(),
             'listDinilai'  => $listDinilai,
-            'rubrikType'   => $rubrikType, // Pass to view
+            'rubrikData'   => $rubrikData, // Pass dynamic rubric
+            'predikats'    => $predikats,  // Pass predikats
             'statistik'    => [
                 'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif'),
                 'totalPeserta'    => $totalPeserta,

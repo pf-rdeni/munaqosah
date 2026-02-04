@@ -138,6 +138,22 @@
                         <p>Materi Ujian</p>
                     </a>
                 </li>
+
+                <!-- Manajemen Rubrik -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/rubrik') ?>" class="nav-link <?= strpos(uri_string(), 'backend/rubrik') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-list-alt"></i>
+                        <p>Manajemen Rubrik</p>
+                    </a>
+                </li>
+
+                <!-- Kriteria Skor (Predikat) -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/predikat') ?>" class="nav-link <?= strpos(uri_string(), 'backend/predikat') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-star-half-alt"></i>
+                        <p>Kriteria Skor</p>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
@@ -197,6 +213,7 @@
                                 <p>Overview</p>
                             </a>
                         </li>
+
                         <li class="nav-item">
                             <a href="<?= base_url('backend/dokumentasi/siswa') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/siswa' ? 'active' : '' ?>">
                                 <i class="far fa-circle nav-icon"></i>

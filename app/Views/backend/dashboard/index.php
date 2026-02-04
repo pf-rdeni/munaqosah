@@ -182,15 +182,19 @@
 <?php endif; ?>
 
 <!-- Rubrik Penilaian (Juri Only) -->
-<?php if (in_array('juri', $groups) && isset($rubrikType)): ?>
+<?php if (in_array('juri', $groups) && !empty($rubrikData)): ?>
 
-    <!-- Rubrik SHOLAT -->
-    <?php if ($rubrikType == 'sholat'): ?>
+    <?php foreach ($rubrikData as $rData): ?>
+    <?php 
+        $materi   = $rData['materi'];
+        $kriteria = $rData['kriteria'];
+        $map      = $rData['map'];
+    ?>
     <div class="row">
         <div class="col-md-12">
             <div class="card card-outline card-info collapsed-card">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-book-open mr-2"></i> Panduan & Rubrik Penilaian Munaqosah Shalat</h3>
+                    <h3 class="card-title"><i class="fas fa-book-open mr-2"></i> Panduan & Rubrik Penilaian: <?= esc($materi['nama_materi']) ?></h3>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
                         <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
@@ -198,7 +202,7 @@
                 </div>
                 <div class="card-body" style="display: none;">
                     <div class="row">
-                        <!-- Tabel 1: Aspek dan Kriteria -->
+                        <!-- Tabel 1: Aspek dan Bobot -->
                         <div class="col-md-6">
                             <h5><i class="fas fa-list-ol mr-2"></i> Aspek dan Bobot Penilaian</h5>
                             <table class="table table-bordered table-sm">
@@ -211,63 +215,31 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <?php $no = 1; foreach ($kriteria as $k): ?>
                                     <tr>
-                                        <td>1</td>
-                                        <td>Niat Salat</td>
-                                        <td>Niat benar, jelas, dan sesuai jenis salat</td>
-                                        <td class="text-center"><strong>10</strong></td>
+                                        <td><?= $no++ ?></td>
+                                        <td><?= esc($k['nama_kriteria']) ?></td>
+                                        <td><?= esc($k['deskripsi']) ?></td>
+                                        <td class="text-center"><strong><?= intval($k['bobot']) ?></strong></td>
                                     </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Bacaan Salat</td>
-                                        <td>Bacaan benar, tartil, dan sesuai urutan</td>
-                                        <td class="text-center"><strong>25</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Gerakan Salat</td>
-                                        <td>Gerakan benar sesuai tuntunan (rukun lengkap)</td>
-                                        <td class="text-center"><strong>25</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td>Tuma'ninah</td>
-                                        <td>Tenang dan tidak tergesa-gesa dalam gerakan</td>
-                                        <td class="text-center"><strong>15</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>5</td>
-                                        <td>Dzikir & Doa</td>
-                                        <td>Sikap sopan, fokus, dan penuh penghayatan</td>
-                                        <td class="text-center"><strong>25</strong></td>
-                                    </tr>
+                                    <?php endforeach; ?>
                                     <tr class="bg-light">
                                         <td colspan="3" class="text-right"><strong>Total Skor</strong></td>
-                                        <td class="text-center"><strong>100</strong></td>
+                                        <td class="text-center"><strong><?= esc($materi['nilai_maksimal']) ?></strong></td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Panduan Skor -->
+                        <!-- Panduan Skor (Global Predikats) -->
                         <div class="col-md-6">
                             <h5><i class="fas fa-star mr-2"></i> Kriteria Skor (Panduan Juri)</h5>
-                            <div class="callout callout-success">
-                                <strong>Sangat Baik (86–100)</strong><br>
-                                Gerakan dan bacaan sangat tepat, tuma’ninah baik, sikap khusyuk.
+                            <?php foreach ($predikats as $p): ?>
+                            <div class="callout callout-<?= esc($p['class_css']) ?>">
+                                <strong><?= esc($p['nama_predikat']) ?> (<?= $p['min_nilai'] ?>-<?= $p['max_nilai'] ?>)</strong><br>
+                                <?= esc($p['deskripsi_global']) ?>
                             </div>
-                            <div class="callout callout-info">
-                                <strong>Baik (76–85)</strong><br>
-                                Gerakan dan bacaan cukup tepat, terdapat kesalahan kecil.
-                            </div>
-                            <div class="callout callout-warning">
-                                <strong>Cukup (66–75)</strong><br>
-                                Masih ada beberapa kesalahan bacaan atau gerakan.
-                            </div>
-                            <div class="callout callout-danger">
-                                <strong>Perlu Bimbingan (<65)</strong><br>
-                                Banyak kesalahan bacaan dan gerakan salat.
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
 
@@ -282,54 +254,25 @@
                                     <thead class="bg-navy">
                                         <tr>
                                             <th style="width: 5%">No</th>
-                                            <th style="width: 15%">Aspek</th>
-                                            <th style="width: 20%">Sangat Baik (86-100)</th>
-                                            <th style="width: 20%">Baik (76-85)</th>
-                                            <th style="width: 20%">Cukup (66-75)</th>
-                                            <th style="width: 20%">Perlu Bimbingan (<65)</th>
+                                            <th style="width: 20%">Aspek</th>
+                                            <?php foreach ($predikats as $p): ?>
+                                            <th>
+                                                <?= esc($p['nama_predikat']) ?><br>
+                                                <small>(<?= $p['min_nilai'] ?>-<?= $p['max_nilai'] ?>)</small>
+                                            </th>
+                                            <?php endforeach; ?>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <?php $no = 1; foreach ($kriteria as $k): ?>
                                         <tr>
-                                            <td>1</td>
-                                            <td><strong>Niat Salat</strong></td>
-                                            <td>Niat benar, lancar, sesuai jenis salat</td>
-                                            <td>Niat benar, kurang lancar</td>
-                                            <td>Niat kurang tepat</td>
-                                            <td>Tidak dapat melafalkan niat</td>
+                                            <td><?= $no++ ?></td>
+                                            <td><strong><?= esc($k['nama_kriteria']) ?></strong></td>
+                                            <?php foreach ($predikats as $p): ?>
+                                                <td><?= nl2br(esc($map[$k['id']][$p['id']] ?? '-')) ?></td>
+                                            <?php endforeach; ?>
                                         </tr>
-                                        <tr>
-                                            <td>2</td>
-                                            <td><strong>Bacaan Salat</strong></td>
-                                            <td>Bacaan lengkap, benar, tartil</td>
-                                            <td>Bacaan cukup benar, ada kesalahan kecil</td>
-                                            <td>Banyak kesalahan bacaan</td>
-                                            <td>Bacaan tidak sesuai</td>
-                                        </tr>
-                                        <tr>
-                                            <td>3</td>
-                                            <td><strong>Gerakan Salat</strong></td>
-                                            <td>Gerakan lengkap dan benar sesuai tuntunan</td>
-                                            <td>Gerakan cukup benar</td>
-                                            <td>Gerakan kurang tepat</td>
-                                            <td>Gerakan banyak salah</td>
-                                        </tr>
-                                        <tr>
-                                            <td>4</td>
-                                            <td><strong>Tuma'ninah</strong></td>
-                                            <td>Setiap gerakan tenang dan tidak tergesa</td>
-                                            <td>Sebagian besar sudah tenang</td>
-                                            <td>Masih sering tergesa</td>
-                                            <td>Tidak tuma'ninah</td>
-                                        </tr>
-                                        <tr>
-                                            <td>5</td>
-                                            <td><strong>Dzikir Sholat</strong></td>
-                                            <td>Fokus, sopan, penuh penghayatan</td>
-                                            <td>Cukup fokus</td>
-                                            <td>Kurang fokus</td>
-                                            <td>Tidak menunjukkan kekhusyukan</td>
-                                        </tr>
+                                        <?php endforeach; ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -339,136 +282,7 @@
             </div>
         </div>
     </div>
-    <?php endif; ?>
-
-    <!-- Rubrik WUDHU -->
-    <?php if ($rubrikType == 'wudhu'): ?>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card card-outline card-info collapsed-card">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-book-open mr-2"></i> Panduan & Rubrik Penilaian Munaqosah Wudhu</h3>
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
-                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
-                    </div>
-                </div>
-                <div class="card-body" style="display: none;">
-                    <div class="row">
-                        <!-- Tabel 1: Aspek dan Kriteria Wudhu -->
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-list-ol mr-2"></i> Aspek dan Bobot Penilaian</h5>
-                            <table class="table table-bordered table-sm">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th style="width: 10px">No</th>
-                                        <th>Aspek Penilaian</th>
-                                        <th>Kriteria Utama</th>
-                                        <th style="width: 100px">Skor Maks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>Niat Wudhu</td>
-                                        <td>Niat benar, jelas, dan sesuai</td>
-                                        <td class="text-center"><strong>25</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Gerakan Wudhu</td>
-                                        <td>Gerakan benar sesuai tuntunan (rukun lengkap)</td>
-                                        <td class="text-center"><strong>50</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Doa Sesudah Wudhu</td>
-                                        <td>Benar dalam pelafalan dan penghayatan</td>
-                                        <td class="text-center"><strong>25</strong></td>
-                                    </tr>
-                                    <tr class="bg-light">
-                                        <td colspan="3" class="text-right"><strong>Total Skor</strong></td>
-                                        <td class="text-center"><strong>100</strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Panduan Skor Wudhu (Sama dengan Sholat) -->
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-star mr-2"></i> Kriteria Skor (Panduan Juri)</h5>
-                            <div class="callout callout-success">
-                                <strong>Sangat Baik (86–100)</strong><br>
-                                Gerakan dan bacaan sangat tepat, tertib dan berurutan, sikap khusyuk.
-                            </div>
-                            <div class="callout callout-info">
-                                <strong>Baik (76–85)</strong><br>
-                                Gerakan dan bacaan cukup tepat, terdapat kesalahan kecil.
-                            </div>
-                            <div class="callout callout-warning">
-                                <strong>Cukup (66–75)</strong><br>
-                                Masih ada beberapa kesalahan bacaan atau gerakan.
-                            </div>
-                            <div class="callout callout-danger">
-                                <strong>Perlu Bimbingan (<65)</strong><br>
-                                Banyak kesalahan bacaan dan gerakan.
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <!-- Tabel 2: Detail Rubrik Wudhu -->
-                    <div class="row mt-4">
-                         <div class="col-md-12">
-                            <h5><i class="fas fa-table mr-2"></i> Detail Rubrik Penilaian</h5>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-striped text-sm">
-                                    <thead class="bg-navy">
-                                        <tr>
-                                            <th style="width: 5%">No</th>
-                                            <th style="width: 25%">Aspek</th>
-                                            <th style="width: 17%">Sangat Baik (86-100)</th>
-                                            <th style="width: 17%">Baik (76-85)</th>
-                                            <th style="width: 17%">Cukup (66-75)</th>
-                                            <th style="width: 19%">Perlu Bimbingan (<65)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>1</td>
-                                            <td><strong>Niat Wudhu</strong></td>
-                                            <td>Niat benar dan lancar</td>
-                                            <td>Niat benar, kurang lancar</td>
-                                            <td>Niat kurang tepat</td>
-                                            <td>Tidak dapat melafalkan niat</td>
-                                        </tr>
-                                        <tr>
-                                            <td>2</td>
-                                            <td><strong>Gerakan Wudhu</strong></td>
-                                            <td>Gerakan wudhu berurutan dan benar sesuai tuntunan</td>
-                                            <td>Gerakan cukup benar</td>
-                                            <td>Gerakan kurang tepat</td>
-                                            <td>Gerakan banyak salah</td>
-                                        </tr>
-                                        <tr>
-                                            <td>3</td>
-                                            <td><strong>Doa Sesudah Wudhu</strong></td>
-                                            <td>Doa benar bacaannya dan penuh penghayatan</td>
-                                            <td>Ada sedikit kesalahan pada bacaan doa</td>
-                                            <td>Banyak salah dalam pelafalan doa</td>
-                                            <td>Tidak hafal doa</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
+    <?php endforeach; ?>
 
 <?php endif; ?>
 

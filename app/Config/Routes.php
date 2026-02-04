@@ -93,6 +93,19 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('kriteria/update/(:num)', 'Munaqosah\Kriteria::update/$1');
     $routes->get('kriteria/delete/(:num)', 'Munaqosah\Kriteria::delete/$1');
 
+    // Manajemen Rubrik Penilaian
+    $routes->get('rubrik', 'Munaqosah\Rubrik::index');
+    $routes->get('rubrik/manage/(:num)', 'Munaqosah\Rubrik::manage/$1');
+    $routes->post('rubrik/save', 'Munaqosah\Rubrik::save');
+
+    // Manajemen Kriteria Skoring (Predikat)
+    $routes->get('predikat', 'Munaqosah\Predikat::index');
+    $routes->get('predikat/create', 'Munaqosah\Predikat::create');
+    $routes->post('predikat/store', 'Munaqosah\Predikat::store');
+    $routes->get('predikat/edit/(:num)', 'Munaqosah\Predikat::edit/$1');
+    $routes->post('predikat/update/(:num)', 'Munaqosah\Predikat::update/$1');
+    $routes->get('predikat/delete/(:num)', 'Munaqosah\Predikat::delete/$1');
+
     // Registrasi Peserta (Undian No Tes)
     $routes->get('peserta', 'Munaqosah\Peserta::index');
     $routes->post('peserta/undian', 'Munaqosah\Peserta::undian');
