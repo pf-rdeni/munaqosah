@@ -112,8 +112,8 @@ class Dashboard extends BaseController
                  
                  // Ambil Rubrik berdasarkan Grup Materi Juri
                  if (!empty($juriData['id_grup_materi'])) {
-                     // 1. Ambil Predikat Global
-                     $predikats = $this->predikatModel->getAll();
+                     // 1. Ambil Predikat (Spesifik Grup atau Fallback Global)
+                    $predikats = $this->predikatModel->getByGrup($juriData['id_grup_materi']);
 
                      // 2. Ambil Materi dalam Grup ini
                      $materiList = $this->materiModel->where('id_grup_materi', $juriData['id_grup_materi'])

@@ -64,7 +64,8 @@ class Rubrik extends BaseController
         }
 
         $kriteria = $this->kriteriaModel->getByMateri($idMateri);
-        $predikats = $this->predikatModel->getAll(); // Sangat Baik, Baik, etc.
+        // Fetch Predikats based on the Materi's Group
+        $predikats = $this->predikatModel->getByGrup($materi['id_grup_materi']);
         
         // Fetch existing rubric data
         $kriteriaIds = array_column($kriteria, 'id');

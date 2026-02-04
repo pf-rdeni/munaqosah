@@ -28,6 +28,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 10px">No</th>
+                                <th>Peruntukan</th>
                                 <th>Nama Predikat</th>
                                 <th>Range Nilai</th>
                                 <th>Deskripsi Global</th>
@@ -40,6 +41,13 @@
                             <?php $no = 1; foreach ($listData as $row): ?>
                             <tr>
                                 <td><?= $no++ ?></td>
+                                <td>
+                                    <?php if (empty($row['nama_grup_materi'])): ?>
+                                        <span class="badge badge-primary">GLOBAL / UMUM</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-info"><?= esc($row['nama_grup_materi']) ?></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= esc($row['nama_predikat']) ?></td>
                                 <td>
                                     <span class="badge badge-<?= esc($row['class_css']) ?>"><?= $row['min_nilai'] ?> - <?= $row['max_nilai'] ?></span>
@@ -48,6 +56,11 @@
                                 <td><code><?= esc($row['class_css']) ?></code></td>
                                 <td><?= esc($row['urutan']) ?></td>
                                 <td>
+                                    <?php if (empty($row['id_grup_materi'])): ?>
+                                        <a href="<?= base_url('backend/predikat/copy/' . $row['id']) ?>" class="btn btn-info btn-xs" title="Copy / Duplicate">
+                                            <i class="fas fa-copy"></i>
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="<?= base_url('backend/predikat/edit/' . $row['id']) ?>" class="btn btn-warning btn-xs">
                                         <i class="fas fa-edit"></i>
                                     </a>

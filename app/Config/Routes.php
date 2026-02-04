@@ -101,6 +101,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     // Manajemen Kriteria Skoring (Predikat)
     $routes->get('predikat', 'Munaqosah\Predikat::index');
     $routes->get('predikat/create', 'Munaqosah\Predikat::create');
+    $routes->get('predikat/copy/(:num)', 'Munaqosah\Predikat::copy/$1');
     $routes->post('predikat/store', 'Munaqosah\Predikat::store');
     $routes->get('predikat/edit/(:num)', 'Munaqosah\Predikat::edit/$1');
     $routes->post('predikat/update/(:num)', 'Munaqosah\Predikat::update/$1');
