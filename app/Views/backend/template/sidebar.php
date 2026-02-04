@@ -136,6 +136,72 @@
                 </li>
                 <?php endif; ?>
                 
+                <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
+                <!-- Separator Dokumentasi -->
+                <li class="nav-header">DOKUMENTASI</li>
+                
+                <!-- Dokumentasi -->
+                <li class="nav-item <?= strpos(uri_string(), 'backend/dokumentasi') !== false ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= strpos(uri_string(), 'backend/dokumentasi') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-book-reader"></i>
+                        <p>
+                            Dokumentasi Sistem
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Overview</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/siswa') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/siswa' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Data Siswa</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/peserta') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/peserta' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Registrasi Peserta</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/monitoring') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/monitoring' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Monitoring Nilai</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/antrian') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/antrian' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Sistem Antrian</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/penilaian') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/penilaian' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Sistem Penilaian</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/konfigurasi') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/konfigurasi' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Sistem Konfigurasi</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/penjurian') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/penjurian' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Sistem Penjurian</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <?php endif; ?>
+
                 <!-- Separator -->
                 <li class="nav-header">AKUN</li>
                 

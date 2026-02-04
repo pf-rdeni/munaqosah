@@ -120,4 +120,16 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('antrian/register', 'Antrian::register');
     $routes->post('antrian/update-status', 'Antrian::updateStatus');
     $routes->post('antrian/delete', 'Antrian::delete');
+
+    // Dokumentasi Sistem
+    $routes->group('dokumentasi', function($routes) {
+        $routes->get('/', 'Munaqosah\Dokumentasi::index');
+        $routes->get('siswa', 'Munaqosah\Dokumentasi::siswa');
+        $routes->get('peserta', 'Munaqosah\Dokumentasi::peserta');
+        $routes->get('monitoring', 'Munaqosah\Dokumentasi::monitoring');
+        $routes->get('antrian', 'Munaqosah\Dokumentasi::antrian');
+        $routes->get('penilaian', 'Munaqosah\Dokumentasi::penilaian');
+        $routes->get('konfigurasi', 'Munaqosah\Dokumentasi::konfigurasi');
+        $routes->get('penjurian', 'Munaqosah\Dokumentasi::penjurian');
+    });
 });
