@@ -66,7 +66,7 @@ class CetakSertifikat extends BaseController
         
         $dataScores = [];
         foreach ($rawScores as $row) {
-            $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']][] = $row['nilai'];
+            $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']][$row['id_juri']] = $row['nilai'];
         }
 
         // 4. Calculate Final Scores
@@ -86,11 +86,19 @@ class CetakSertifikat extends BaseController
                     
                     foreach ($mData['kriteria'] as $k) {
                         $kid = $k['id'];
+                        // NOTE: $mScores is [kid] => [0 => val, 1 => val]. 
+                        // In index method, we constructed dataScores differently:
+                        // $dataScores[$np][$mid][$kid][] = val
+                        // So $mScores[$kid] is correct array of values.
+                        
                         $vals = $mScores[$kid] ?? [];
 
                         if (empty($vals)) {
-                            $isComplete = false; 
-                            continue;
+                           // If value is empty, we act like it's 0 contribution (or skip)?
+                           // Monitoring logic: continues without adding to subtotal.
+                           // BUT sets isComplete = false first.
+                           $isComplete = false; 
+                           continue;
                         }
 
                         // Avg
@@ -98,12 +106,10 @@ class CetakSertifikat extends BaseController
                         
                         // Weighted
                         if ($isPengurangan) {
-                            $finalVal = $avg;
+                            $materiSubtotal += $avg;
                         } else {
-                            $finalVal = $avg * ($k['bobot'] / 100);
+                            $materiSubtotal += $avg * ($k['bobot'] / 100);
                         }
-                        
-                        $materiSubtotal += $finalVal;
                     }
                 } else {
                     $isComplete = false;
@@ -230,19 +236,27 @@ class CetakSertifikat extends BaseController
                  // Group by Kriteria
                  $kriteriaScores = [];
                  foreach ($mScores as $row) {
-                     $kriteriaScores[$row['id_kriteria']][] = $row['nilai'];
+                     $kriteriaScores[$row['id_kriteria']][$row['id_juri']] = $row['nilai'];
                  }
 
                  foreach ($kriteria as $k) {
                      $kid = $k['id'];
-                     $vals = $kriteriaScores[$kid] ?? [];
-                     if (!empty($vals)) {
-                        $avg = array_sum($vals) / count($vals);
-                        if ($isPengurangan) {
-                            $materiSubtotal += $avg;
-                        } else {
-                            $materiSubtotal += $avg * ($k['bobot'] / 100);
-                        }
+                     $vals = $kriteriaScores[$kid] ?? []; // Daftar Nilai Juri
+                     
+                     if (empty($vals)) {
+                        // If value is empty, we act like it's 0 contribution?
+                        // In Monitoring: continue (subtotal unchanged).
+                        continue;
+                     }
+
+                     // Hitung Rata-Rata (Matches Monitoring)
+                     $avg = array_sum($vals) / count($vals);
+                     
+                     // Terapkan Bobot (Matches Monitoring)
+                     if ($isPengurangan) {
+                        $materiSubtotal += $avg;
+                     } else {
+                        $materiSubtotal += $avg * ($k['bobot'] / 100);
                      }
                  }
                  
@@ -251,10 +265,11 @@ class CetakSertifikat extends BaseController
                  }
             }
 
-            if ($hasScore || !$isPengurangan) { // Only count if there's score or main subject
+            // Ensure distinct handling for empty scores vs zero scores
+            if ($hasScore || !$isPengurangan) { 
                  $scores[$m['nama_materi']] = $materiSubtotal;
                  $totalScore += $materiSubtotal;
-                 $countMateri++; // Use structure count or actual count? Structure count is safer for average div
+                 $countMateri++; 
             }
         }
         

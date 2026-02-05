@@ -35,7 +35,7 @@ class MonitoringNilai extends BaseController
             return redirect()->to('/login');
         }
 
-        if (!in_groups(['admin', 'operator', 'kepala'])) {
+        if (!in_groups(['admin', 'operator', 'kepala', 'panitia'])) {
             return redirect()->to('/backend/dashboard')->with('error', 'Akses ditolak.');
         }
 
