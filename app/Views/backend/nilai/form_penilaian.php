@@ -207,16 +207,26 @@
                 </div>
                 <?php endif; ?>
                 
-                <div class="card-footer text-right">
-                    <?php if(isset($lockedByOther) && $lockedByOther): ?>
-                        <button type="button" class="btn btn-secondary" onclick="location.reload()">Tutup</button>
-                    <?php elseif(!isset($isGraded) || !$isGraded): ?>
-                    <button type="button" class="btn btn-secondary mr-2" onclick="location.reload()">Batal</button>
-                    <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save mr-2"></i> Simpan Nilai</button>
-                    <?php else: ?>
-                    <button type="button" class="btn btn-warning" id="btn-unlock"><i class="fas fa-lock mr-1"></i> Edit Nilai (Otorisasi)</button>
-                    <button type="button" class="btn btn-secondary" onclick="location.reload()">Tutup</button>
-                    <?php endif; ?>
+                <div class="card-footer d-flex justify-content-between">
+                    <div>
+                        <?php if(isset($lockedByOther) && $lockedByOther): ?>
+                             <!-- No Cancel needed if locked strictly -->
+                             <button type="button" class="btn btn-secondary" onclick="location.reload()">Kembali</button>
+                        <?php else: ?>
+                             <button type="button" class="btn btn-secondary" onclick="confirmCancel()"><i class="fas fa-arrow-left mr-1"></i> Kembali</button>
+                        <?php endif; ?>
+                    </div>
+
+                    <div>
+                        <?php if(isset($lockedByOther) && $lockedByOther): ?>
+                            <button type="button" class="btn btn-secondary" onclick="location.reload()">Tutup</button>
+                        <?php elseif(!isset($isGraded) || !$isGraded): ?>
+                            <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save mr-2"></i> Simpan Nilai</button>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-warning" id="btn-unlock"><i class="fas fa-lock mr-1"></i> Edit Nilai (Otorisasi)</button>
+                            <!-- Secondary close button on right is redundant if we have 'Kembali' on left, but keeps UI balanced -->
+                        <?php endif; ?>
+                    </div>
                 </div>
             </form>
         </div>
@@ -352,8 +362,14 @@
                     
                     // Replace buttons
                     $('.card-footer').html(`
-                        <button type="button" class="btn btn-secondary mr-2" onclick="location.reload()">Batal</button>
-                        <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save mr-2"></i> Simpan Nilai</button>
+                        <div class="d-flex justify-content-between w-100">
+                             <div>
+                                <button type="button" class="btn btn-secondary" onclick="confirmCancel()"><i class="fas fa-arrow-left mr-1"></i> Kembali</button>
+                             </div>
+                             <div>
+                                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save mr-2"></i> Simpan Nilai</button>
+                             </div>
+                        </div>
                     `);
                 } else {
                     Swal.fire('Gagal', res.message, 'error');
@@ -515,4 +531,32 @@
             input.val(currentVal - 1).trigger('change');
         }
     });
+
+    // Dirty State Tracking
+    let formIsDirty = false;
+    $('.input-nilai-field, textarea').on('change keyup', function() {
+        formIsDirty = true;
+    });
+
+    // Custom Cancel Confirmation
+    window.confirmCancel = function() {
+        if (formIsDirty) {
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: "Anda telah mengubah nilai. Data yang belum disimpan akan hilang. Yakin ingin kembali?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Kembali',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload();
+                }
+            });
+        } else {
+            location.reload();
+        }
+    };
 </script>

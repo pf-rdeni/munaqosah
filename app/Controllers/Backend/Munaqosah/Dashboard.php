@@ -81,23 +81,95 @@ class Dashboard extends BaseController
         // Restore variable needed for view (backward compatibility)
         $pesertaDinilai = $this->nilaiModel->countPesertaDinilai($tahunAjaran);
 
-        // Helper status counts
-        $statusCounts = $this->antrianModel->getStatusCounts($tahunAjaran);
-        $statMenunggu   = $statusCounts[0] ?? 0;
-        $statProses     = $statusCounts[1] ?? 0; // Sedang Ujian + Dipanggil
-        $statSelesai    = $statusCounts[2] ?? 0;
+        // ------------------------------------------------------------------
+        // REVISI: Hitung Statistik Berdasarkan PROGRESS PENILAIAN (Match Monitoring)
+        // ------------------------------------------------------------------
         
-        // Calculate percentages
-        $totalRegistered = $statMenunggu + $statProses + $statSelesai;
-        // Fallback to totalPeserta if antrian records missing (should match theoretically)
-        if ($totalRegistered == 0) $totalRegistered = $totalPeserta; 
-        
-        $percentSelesai = $totalRegistered > 0 ? ($statSelesai / $totalRegistered) * 100 : 0;
-        $percentProses  = $totalRegistered > 0 ? ($statProses / $totalRegistered) * 100 : 0;
-        // Residual for grey area (Belum)
-        $percentBelum   = 100 - ($percentSelesai + $percentProses); // Can also use ($statMenunggu / total) * 100
+        // 1. Ambil Struktur Materi & Kriteria (Sama seperti MonitoringNilai)
+        $allMateri = $this->materiModel->select('tbl_munaqosah_materi_ujian.*, gm.kondisional_set')
+                                       ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_materi_ujian.id_grup_materi', 'left')
+                                       ->orderBy('tbl_munaqosah_materi_ujian.id', 'ASC')
+                                       ->findAll();
 
-        $progressPercent = round($percentSelesai, 1); // Main indicator is "Done"
+        $structure = [];
+        foreach ($allMateri as $m) {
+            $mId = $m['id'];
+            $kriteria = $this->kriteriaModel->where('id_materi', $mId)->findAll();
+            $structure[$mId] = [
+                'info' => $m,
+                'kriteria' => $kriteria
+            ];
+        }
+
+        // 2. Ambil Semua Skor
+        $rawScores = $this->nilaiModel->where('tahun_ajaran', $tahunAjaran)->findAll();
+        
+        // Organize Scores: $dataScores[NoPeserta][MateriID][KriteriaID] = Count/Array
+        // Gunakan struktur yang efisien untuk checking
+        $dataScores = [];
+        foreach ($rawScores as $row) {
+             // Mark as exists
+             $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']] = true;
+        }
+
+        // 3. Ambil Semua Peserta Aktif
+        $allPeserta = $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->findAll();
+
+        // 4. Hitung Status per Peserta
+        $countBelum   = 0;
+        $countProgres = 0;
+        $countSelesai = 0;
+
+        foreach ($allPeserta as $p) {
+            $np = $p['no_peserta'];
+            $hasAnyScore = false;
+            $isComplete  = true;
+
+            foreach ($structure as $mid => $mData) {
+                // Ignore Empty Materi (if any)
+                if (empty($mData['kriteria'])) continue;
+
+                if (isset($dataScores[$np][$mid])) {
+                    $mScores = $dataScores[$np][$mid];
+                    foreach ($mData['kriteria'] as $k) {
+                        $kid = $k['id'];
+                        if (!isset($mScores[$kid])) {
+                            $isComplete = false;
+                        } else {
+                            $hasAnyScore = true;
+                        }
+                    }
+                } else {
+                    $isComplete = false;
+                }
+            }
+            
+            // Handle case where no kriteria exist at all (edge case)
+            if (empty($structure)) $isComplete = false;
+
+            if ($isComplete) {
+                $countSelesai++;
+            } elseif ($hasAnyScore) {
+                $countProgres++;
+            } else {
+                $countBelum++;
+            }
+        }
+
+        // Update Statistik Variables
+        $statMenunggu = $countBelum;
+        $statProses   = $countProgres;
+        $statSelesai  = $countSelesai;
+
+        // Calculate percentages
+        $totalRegistered = count($allPeserta);
+        if ($totalRegistered == 0) $totalRegistered = 1; 
+        
+        $percentSelesai = ($statSelesai / $totalRegistered) * 100;
+        $percentProses  = ($statProses / $totalRegistered) * 100;
+        $percentBelum   = 100 - ($percentSelesai + $percentProses);
+
+        $progressPercent = round($percentSelesai, 1);
 
         // Data Rubrik Dinamis
         $rubrikData  = [];
@@ -112,6 +184,42 @@ class Dashboard extends BaseController
                  
                  // Ambil Rubrik berdasarkan Grup Materi Juri
                  if (!empty($juriData['id_grup_materi'])) {
+                      // ------------------------------------------------------------------
+                      // HITUNG STATISTIK PERBANDINGAN (My Count vs Others)
+                      // ------------------------------------------------------------------
+                      $myJuriId = $juriData['id'];
+                      $myGrupMateriId = $juriData['id_grup_materi'];
+    
+                      // 1. Jumlah yang SAYA nilai (Distinct Peserta)
+                      $myGradedCount = $this->nilaiModel->where('id_juri', $myJuriId)
+                                                        ->where('tahun_ajaran', $tahunAjaran)
+                                                        ->select('no_peserta')
+                                                        ->distinct()
+                                                        ->countAllResults();
+    
+                      // 2. Jumlah yang JURI LAIN nilai (dalam Grup Materi yang sama)
+                      $otherJuris = $this->juriModel->where('id_grup_materi', $myGrupMateriId)
+                                                    ->where('id !=', $myJuriId)
+                                                    ->findAll();
+                      
+                      $othersGradedCount = 0;
+                      if (!empty($otherJuris)) {
+                          $otherJuriIds = array_column($otherJuris, 'id');
+                          $othersGradedCount = $this->nilaiModel->whereIn('id_juri', $otherJuriIds)
+                                                                ->where('tahun_ajaran', $tahunAjaran)
+                                                                ->select('no_peserta')
+                                                                ->distinct()
+                                                                ->countAllResults();
+                      }
+    
+                      $juriComparison = [
+                          'my_count' => $myGradedCount,
+                          'others_count' => $othersGradedCount,
+                          'my_name' => $juriData['nama_juri'],
+                          'others_label' => (count($otherJuris) > 0) ? 'Juri Lain' : '-'
+                      ];
+                      // ------------------------------------------------------------------
+
                      // 1. Ambil Predikat (Spesifik Grup atau Fallback Global)
                     $predikats = $this->predikatModel->getByGrup($juriData['id_grup_materi']);
 
@@ -191,6 +299,7 @@ class Dashboard extends BaseController
             'listDinilai'  => $listDinilai,
             'rubrikData'   => $rubrikData, // Pass dynamic rubric
             'predikats'    => $predikats,  // Pass predikats
+            'juriComparison' => $juriComparison ?? null, // Data Statistik Juri
             'statistik'    => [
                 'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif'),
                 'totalPeserta'    => $totalPeserta,

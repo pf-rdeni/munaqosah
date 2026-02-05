@@ -118,6 +118,92 @@
 
 
 <!-- Charts Row -->
+<!-- Statistik Row (Small Boxes) -->
+<div class="row">
+    <!-- 1. Juri Comparison (My Count vs Others) -->
+    <?php if (isset($juriComparison) && !empty($juriComparison)): ?>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-purple">
+            <div class="inner">
+                <h3><?= $juriComparison['my_count'] ?></h3>
+                <p>Juri: Saya Menilai</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="small-box-footer" style="padding: 3px 0;">
+                <span style="font-size: 0.9em;">
+                    vs Juri Lain: <strong><?= $juriComparison['others_count'] ?></strong>
+                    (<?= $juriComparison['others_label'] ?>)
+                </span>
+            </div>
+        </div>
+    </div>
+    <?php else: ?>
+        <!-- Placeholder for Admin/Panitia if needed, or empty -->
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-secondary">
+                 <div class="inner">
+                    <h3><?= $statistik['totalPeserta'] ?></h3>
+                    <p>Total Peserta</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="small-box-footer">&nbsp;</div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- 2. Progress Penilaian -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3><?= $statistik['progressPercent'] ?><sup style="font-size: 20px">%</sup></h3>
+                <p>Progress Total</p>
+            </div>
+            <div class="icon">
+                <i class="ion ion-stats-bars"></i>
+            </div>
+             <a href="<?= base_url('backend/monitoring/nilai') ?>" class="small-box-footer">
+                Lihat Monitoring <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- 3. Selesai -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3><?= $statistik['statSelesai'] ?></h3>
+                <p>Peserta Selesai</p>
+            </div>
+            <div class="icon">
+                <i class="ion ion-checkmark-circled"></i>
+            </div>
+             <a href="<?= base_url('backend/monitoring/nilai') ?>" class="small-box-footer">
+                Lihat Data <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4. Belum -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3><?= $statistik['statMenunggu'] ?></h3>
+                <p>Belum Dinilai</p>
+            </div>
+            <div class="icon">
+                <i class="ion ion-person-add"></i>
+            </div>
+             <a href="<?= base_url('backend/monitoring/nilai') ?>" class="small-box-footer">
+                Lihat Data <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
 <?php if (in_array('admin', $groups) || in_array('panitia', $groups) || in_array('juri', $groups)): ?>
 <div class="row">
     <!-- Progress Penilaian -->
