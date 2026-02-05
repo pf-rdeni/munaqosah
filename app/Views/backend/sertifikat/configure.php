@@ -408,46 +408,58 @@
     function renderFieldsList() {
         var html = '';
         fields.forEach((f, i) => {
-            var activeClass = (i === selectedFieldIndex) ? 'border-primary bg-light' : '';
+            var isSelected = (i === selectedFieldIndex);
+            var activeClass = isSelected ? 'border-primary bg-light' : '';
+            var settingsDisplay = isSelected ? 'block' : 'none';
+            
             html += `
-                <div class="card mb-2 ${activeClass}" onclick="selectField(${i})">
+                <div class="card mb-2 ${activeClass}" data-field-index="${i}">
                     <div class="card-body p-2">
-                        <div class="d-flex justify-content-between">
-                            <strong>${f.label}</strong>
-                            <button type="button" class="btn btn-xs btn-danger" onclick="removeField(${i}); event.stopPropagation();"><i class="fas fa-trash"></i></button>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong style="cursor: pointer;" onclick="selectField(${i})">${f.label}</strong>
+                            <div>
+                                <button type="button" class="btn btn-xs btn-outline-info mr-1" onclick="toggleFieldSettings(${i}); event.stopPropagation();" title="Edit Settings">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-danger" onclick="removeField(${i}); event.stopPropagation();" title="Hapus Field">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="row mt-2" onclick="event.stopPropagation()">
-                            <div class="col-6">
-                                <small>Align:</small>
-                                <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'text_align', this.value)">
-                                    <option value="L" ${f.text_align==='L'?'selected':''}>Left</option>
-                                    <option value="C" ${f.text_align==='C'?'selected':''}>Center</option>
-                                    <option value="R" ${f.text_align==='R'?'selected':''}>Right</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <small>Style:</small>
-                                <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'font_style', this.value)">
-                                    <option value="N" ${f.font_style==='N'?'selected':''}>Normal</option>
-                                    <option value="B" ${f.font_style==='B'?'selected':''}>Bold</option>
-                                    <option value="I" ${f.font_style==='I'?'selected':''}>Italic</option>
-                                </select>
-                            </div>
-                            <div class="col-6 mt-1">
-                                <small>Size (px):</small>
-                                <input type="number" class="form-control form-control-sm" value="${f.font_size}" onchange="updateFieldProp(${i}, 'font_size', this.value)">
-                            </div>
-                            <div class="col-6 mt-1">
-                                <small>Color:</small>
-                                <input type="color" class="form-control form-control-sm" value="${f.text_color}" onchange="updateFieldProp(${i}, 'text_color', this.value)">
-                            </div>
-                            <div class="col-6 mt-1">
-                                <small>X:</small>
-                                <input type="number" class="form-control form-control-sm" value="${f.x}" onchange="updateFieldProp(${i}, 'x', this.value)">
-                            </div>
-                            <div class="col-6 mt-1">
-                                <small>Y:</small>
-                                <input type="number" class="form-control form-control-sm" value="${f.y}" onchange="updateFieldProp(${i}, 'y', this.value)">
+                        <div class="field-settings mt-2" id="fieldSettings${i}" style="display: ${settingsDisplay};" onclick="event.stopPropagation()">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small>Align:</small>
+                                    <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'text_align', this.value)">
+                                        <option value="L" ${f.text_align==='L'?'selected':''}>Left</option>
+                                        <option value="C" ${f.text_align==='C'?'selected':''}>Center</option>
+                                        <option value="R" ${f.text_align==='R'?'selected':''}>Right</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <small>Style:</small>
+                                    <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'font_style', this.value)">
+                                        <option value="N" ${f.font_style==='N'?'selected':''}>Normal</option>
+                                        <option value="B" ${f.font_style==='B'?'selected':''}>Bold</option>
+                                        <option value="I" ${f.font_style==='I'?'selected':''}>Italic</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 mt-1">
+                                    <small>Size (px):</small>
+                                    <input type="number" class="form-control form-control-sm" value="${f.font_size}" onchange="updateFieldProp(${i}, 'font_size', this.value)">
+                                </div>
+                                <div class="col-6 mt-1">
+                                    <small>Color:</small>
+                                    <input type="color" class="form-control form-control-sm" value="${f.text_color}" onchange="updateFieldProp(${i}, 'text_color', this.value)">
+                                </div>
+                                <div class="col-6 mt-1">
+                                    <small>X:</small>
+                                    <input type="number" class="form-control form-control-sm" value="${f.x}" onchange="updateFieldProp(${i}, 'x', this.value)">
+                                </div>
+                                <div class="col-6 mt-1">
+                                    <small>Y:</small>
+                                    <input type="number" class="form-control form-control-sm" value="${f.y}" onchange="updateFieldProp(${i}, 'y', this.value)">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -455,6 +467,21 @@
             `;
         });
         $('#fieldsList').html(html);
+    }
+
+    function toggleFieldSettings(index) {
+        var settingsEl = document.getElementById('fieldSettings' + index);
+        if (settingsEl) {
+            if (settingsEl.style.display === 'none') {
+                // Close all others first
+                document.querySelectorAll('.field-settings').forEach(el => el.style.display = 'none');
+                settingsEl.style.display = 'block';
+                selectedFieldIndex = index;
+                drawCanvas();
+            } else {
+                settingsEl.style.display = 'none';
+            }
+        }
     }
 
     function selectField(index) {

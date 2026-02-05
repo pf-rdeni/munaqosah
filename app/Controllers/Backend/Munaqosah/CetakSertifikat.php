@@ -8,9 +8,11 @@ use App\Models\Munaqosah\NilaiUjianModel;
 use App\Models\Munaqosah\MateriModel;
 use App\Models\Munaqosah\KriteriaModel;
 use App\Models\Munaqosah\GrupMateriModel;
+use App\Models\Munaqosah\PredikatModel;
 use App\Models\Backend\SertifikatTemplateModel;
 use App\Models\Backend\SertifikatFieldModel;
 use App\Helpers\CertificateGenerator;
+use ZipStream\ZipStream;
 
 class CetakSertifikat extends BaseController
 {
@@ -21,6 +23,7 @@ class CetakSertifikat extends BaseController
     protected $grupMateriModel;
     protected $templateModel;
     protected $fieldModel;
+    protected $predikatModel;
 
     public function __construct()
     {
@@ -31,6 +34,7 @@ class CetakSertifikat extends BaseController
         $this->grupMateriModel = new GrupMateriModel();
         $this->templateModel = new SertifikatTemplateModel();
         $this->fieldModel = new SertifikatFieldModel();
+        $this->predikatModel = new PredikatModel();
     }
 
     public function index()
@@ -69,6 +73,9 @@ class CetakSertifikat extends BaseController
             $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']][$row['id_juri']] = $row['nilai'];
         }
 
+        // Global Predikats
+        $globalPredikats = $this->predikatModel->getByGrup(null);
+
         // 4. Calculate Final Scores
         $finalData = [];
         foreach ($pesertaList as $p) {
@@ -77,6 +84,7 @@ class CetakSertifikat extends BaseController
             $isComplete = true;
 
             foreach ($structure as $mid => $mData) {
+                // ... (existing inner loop logic for scores) ...
                 $mInfo = $mData['info'];
                 $isPengurangan = ($mInfo['kondisional_set'] == 'nilai_pengurangan');
                 $materiSubtotal = 0;
@@ -86,22 +94,13 @@ class CetakSertifikat extends BaseController
                     
                     foreach ($mData['kriteria'] as $k) {
                         $kid = $k['id'];
-                        // NOTE: $mScores is [kid] => [0 => val, 1 => val]. 
-                        // In index method, we constructed dataScores differently:
-                        // $dataScores[$np][$mid][$kid][] = val
-                        // So $mScores[$kid] is correct array of values.
-                        
                         $vals = $mScores[$kid] ?? [];
 
                         if (empty($vals)) {
-                           // If value is empty, we act like it's 0 contribution (or skip)?
-                           // Monitoring logic: continues without adding to subtotal.
-                           // BUT sets isComplete = false first.
                            $isComplete = false; 
                            continue;
                         }
 
-                        // Avg
                         $avg = array_sum($vals) / count($vals);
                         
                         // Weighted
@@ -124,7 +123,22 @@ class CetakSertifikat extends BaseController
             }
 
             $finalData[$np]['grand_total'] = $grandTotal;
-            $finalData[$np]['rata_rata'] = count($structure) > 0 ? $grandTotal / count($structure) : 0; // Fix average div by zero
+            $avgScore = count($structure) > 0 ? $grandTotal / count($structure) : 0;
+            $finalData[$np]['rata_rata'] = $avgScore;
+            
+            // Calculate Nilai Huruf
+        // Calculate Nilai Huruf & Predikat Label
+        $nilaiHuruf = '-';
+        $predikatLabel = '-';
+        foreach ($globalPredikats as $pred) {
+            if ($avgScore >= $pred['min_nilai'] && $avgScore <= $pred['max_nilai']) {
+                $nilaiHuruf = $pred['predikat_huruf'] ?? '-';
+                $predikatLabel = $pred['nama_predikat'];
+                break;
+            }
+        }
+        $finalData[$np]['nilai_huruf'] = $nilaiHuruf;
+        $finalData[$np]['predikat_label'] = $predikatLabel;
             
             // Status & Ranking helper
             $finalData[$np]['status'] = (!$isComplete) ? 'BELUM LENGKAP' : (($finalData[$np]['rata_rata'] >= 65) ? 'LULUS' : 'TDK LULUS');
@@ -215,6 +229,9 @@ class CetakSertifikat extends BaseController
         $totalScore = 0;
         $countMateri = 0;
 
+        // Fetch Global Predikats
+        $globalPredikats = $this->predikatModel->getByGrup(null);
+
         foreach ($allMateri as $m) {
             $mId = $m['id'];
             $kriteria = $this->kriteriaModel->where('id_materi', $mId)->findAll();
@@ -267,7 +284,27 @@ class CetakSertifikat extends BaseController
 
             // Ensure distinct handling for empty scores vs zero scores
             if ($hasScore || !$isPengurangan) { 
-                 $scores[$m['nama_materi']] = $materiSubtotal;
+                 // Calculate Grade Logic
+                 $gradeLetter = '-';
+                 $usePredikats = $globalPredikats;
+                 
+                 // TODO: If we want per-materi group predicates, we need to fetch them.
+                 // For now, request implies we use database predicates. Assuming Global for all subjects unless specified?
+                 // User said "ambil dari databse tabe predikat". Usually subjects follow global unless specific.
+                 // Let's rely on Global for now as per previous context "ambil yang gelobal".
+                 // "penentuan rang A, B dan lainya melihat dari tabel predikat rang tertinggi adalah A dan mengikuti rang ke bawahnya, ambil yang gelobal" -> confirmed global.
+                 
+                 foreach ($globalPredikats as $pred) {
+                    if ($materiSubtotal >= $pred['min_nilai'] && $materiSubtotal <= $pred['max_nilai']) {
+                        $gradeLetter = $pred['predikat_huruf'] ?? '-';
+                        break;
+                    }
+                 }
+
+                 $scores[$m['nama_materi']] = [
+                    'nilai' => $materiSubtotal,
+                    'huruf' => $gradeLetter
+                 ];
                  $totalScore += $materiSubtotal;
                  $countMateri++; 
             }
@@ -283,7 +320,8 @@ class CetakSertifikat extends BaseController
             'tahun_ajaran' => $peserta['tahun_ajaran'],
             'scores' => $scores,
             'total' => $totalScore,
-            'avg' => $avgScore
+            'avg' => $avgScore,
+            'nilai_huruf' => $this->getPredikatByScore($avgScore, $globalPredikats, 'predikat_huruf')
         ];
 
         // 5. Prepare Front Page Data Mapping
@@ -304,7 +342,8 @@ class CetakSertifikat extends BaseController
              'nama_ayah' => $peserta['nama_ayah'],
              'alamat' => $peserta['alamat'],
              'nama_sekolah' => 'SDIT AN-NAHL', // Hardcoded or from settings?
-             'predikat' => ($avgScore >= 90) ? 'MUMTAZ' : (($avgScore >= 80) ? 'JAYYID JIDDAN' : 'JAYYID'), // Logic needed
+             'predikat' => $this->getPredikatByScore($avgScore, $globalPredikats, 'nama_predikat'),
+             'nilai_huruf' => $this->getPredikatByScore($avgScore, $globalPredikats, 'predikat_huruf'),
              'nilai_rata_rata' => number_format($avgScore, 1),
              'tanggal_terbit' => date('d F Y'), // Param?
              'nomor_sertifikat' => 'SERT/'.date('Y').'/'.str_pad($peserta['id_peserta'], 3, '0', STR_PAD_LEFT), // Dummy logic
@@ -325,5 +364,200 @@ class CetakSertifikat extends BaseController
         
         $generator->generateWithBackPage($templateBelakang, $backFields, $combinedData)
                   ->stream($filename, ['Attachment' => 0]); // 0 = Inline Preview
+    }
+
+    public function printBatch()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('/login');
+
+        // Increase limits for batch processing
+        ini_set('memory_limit', '1024M');
+        set_time_limit(600);
+
+        $tahunAjaran = $this->getTahunAjaran();
+
+        // 1. Get Templates
+        $templateDepan = $this->templateModel->getTemplateByHalaman('depan');
+        $templateBelakang = $this->templateModel->getTemplateByHalaman('belakang');
+
+        if (!$templateDepan || !$templateBelakang) {
+            return redirect()->back()->with('error', 'Template Sertifikat belum lengkap');
+        }
+
+        $frontFields = $this->fieldModel->getFieldsByTemplate($templateDepan['id']);
+        $backFields = $this->fieldModel->getFieldsByTemplate($templateBelakang['id']);
+
+        // 2. Get Data (Materi, Peserta, Scores)
+        
+        // Materi
+        $allMateri = $this->materiModel->select('tbl_munaqosah_materi_ujian.*, gm.kondisional_set')
+                                       ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_materi_ujian.id_grup_materi', 'left')
+                                       ->orderBy('tbl_munaqosah_materi_ujian.id', 'ASC')
+                                       ->findAll();
+        // Kriteria Cache
+        $kriteriaCache = [];
+        foreach ($allMateri as $m) {
+            $kriteriaCache[$m['id']] = $this->kriteriaModel->where('id_materi', $m['id'])->findAll();
+        }
+
+        // Peserta
+        $pesertaList = $this->pesertaModel
+            ->select('tbl_munaqosah_peserta.*, s.*, s.nisn as real_nisn, tbl_munaqosah_peserta.id as id_peserta')
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'inner')
+            ->where('tahun_ajaran', $tahunAjaran)
+            ->orderBy('no_peserta', 'ASC')
+            ->findAll();
+
+        // Scores
+        $rawScores = $this->nilaiModel->where('tahun_ajaran', $tahunAjaran)->findAll();
+        $dataScores = [];
+        foreach ($rawScores as $row) {
+            $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']][$row['id_juri']] = $row['nilai'];
+        }
+
+        // 3. Init Zip (ZipStream v3)
+        $zipName = 'Sertifikat_Munaqosah_'.date('YmdHis').'.zip';
+        
+        $zip = new ZipStream(
+            outputName: $zipName,
+            sendHttpHeaders: true
+        );
+
+        $countProcessed = 0;
+        
+        // Fetch Global Predikats
+        $globalPredikats = $this->predikatModel->getByGrup(null);
+
+        foreach ($pesertaList as $p) {
+            $np = $p['no_peserta'];
+            
+            // Calculate Scores for this Peserta
+            $scores = [];
+            $totalScore = 0;
+            $isComplete = true;
+            
+            foreach ($allMateri as $m) {
+                $mId = $m['id'];
+                $isPengurangan = ($m['kondisional_set'] == 'nilai_pengurangan');
+                $materiSubtotal = 0;
+                $hasScore = false;
+                
+                if (isset($dataScores[$np][$mId])) {
+                     $mScores = $dataScores[$np][$mId];
+                     $kriteria = $kriteriaCache[$mId];
+                     
+                     foreach ($kriteria as $k) {
+                         $kid = $k['id'];
+                         $vals = $mScores[$kid] ?? [];
+                         
+                         if (empty($vals)) {
+                             $isComplete = false; 
+                             continue;
+                         }
+
+                         $avg = array_sum($vals) / count($vals);
+                         
+                         if ($isPengurangan) {
+                             $materiSubtotal += $avg;
+                         } else {
+                             $materiSubtotal += $avg * ($k['bobot'] / 100);
+                         }
+                         $hasScore = true;
+                     }
+                     
+                     if ($isPengurangan && count($kriteria) > 0) {
+                         $materiSubtotal = $materiSubtotal / count($kriteria);
+                     }
+                } else {
+                    $isComplete = false;
+                }
+
+                if ($hasScore || !$isPengurangan) {
+                    // Calculate Grade Logic (Global)
+                    $gradeLetter = '-';
+                    foreach ($globalPredikats as $pred) {
+                        if ($materiSubtotal >= $pred['min_nilai'] && $materiSubtotal <= $pred['max_nilai']) {
+                            $gradeLetter = $pred['predikat_huruf'] ?? '-';
+                            break;
+                        }
+                    }
+
+                    $scores[$m['nama_materi']] = [
+                        'nilai' => $materiSubtotal,
+                        'huruf' => $gradeLetter
+                    ];
+                    $totalScore += $materiSubtotal;
+                }
+            }
+            
+            // Avg
+            $avgScore = count($allMateri) > 0 ? $totalScore / count($allMateri) : 0;
+            $status = (!$isComplete) ? 'BELUM' : (($avgScore >= 65) ? 'LULUS' : 'TDK');
+
+            // Only Process LULUS
+            if ($isComplete && $status == 'LULUS') {
+                
+                $scoreData = [
+                    'nama_siswa' => $p['nama_siswa'],
+                    'no_peserta' => $p['no_peserta'],
+                    'tahun_ajaran' => $p['tahun_ajaran'],
+                    'scores' => $scores, // Note: scores keys might need to match template requirements
+                    'total' => $totalScore,
+                    'avg' => $avgScore
+                ];
+                
+                // Generator Data
+                $generatorData = [
+                     'nama_peserta' => $p['nama_siswa'],
+                     'nomor_peserta' => $p['no_peserta'],
+                     'nisn' => $p['real_nisn'],
+                     'nis' => $p['nis'] ?? '-',
+                     'tahun_ajaran' => $p['tahun_ajaran'],
+                     'tempat_lahir' => $p['tempat_lahir'],
+                     'tanggal_lahir' => $p['tanggal_lahir'],
+                     'jenis_kelamin' => $p['jenis_kelamin'],
+                     'nama_ayah' => $p['nama_ayah'],
+                     'alamat' => $p['alamat'],
+                     'nama_sekolah' => 'SDIT AN-NAHL',
+                     'predikat' => $this->getPredikatByScore($avgScore, $globalPredikats, 'nama_predikat'),
+                     'nilai_huruf' => $this->getPredikatByScore($avgScore, $globalPredikats, 'predikat_huruf'),
+                     'nilai_rata_rata' => number_format($avgScore, 1),
+                     'tanggal_terbit' => date('d F Y'),
+                     'nomor_sertifikat' => 'SERT/'.date('Y').'/'.str_pad($p['id_peserta'], 3, '0', STR_PAD_LEFT),
+                     'kepala_sekolah' => 'Nama Kepala Sekolah', // TODO: Setting
+                     'nip_kepala' => '-',
+                     'qr_code' => '',
+                     'foto_peserta' => FCPATH . ($p['foto'] ?? 'assets/img/default.png'),
+                ];
+                
+                $generator = new CertificateGenerator($templateDepan, $frontFields);
+                $generator->setData($generatorData);
+                
+                $combinedData = array_merge($scoreData, $generatorData);
+                
+                // Get PDF String
+                // Pass S for String return
+                $pdfContent = $generator->generateWithBackPage($templateBelakang, $backFields, $combinedData)
+                                        ->output(null, 'S');
+                
+                // Add to Zip
+                $fileName = 'Sertifikat_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $p['nama_siswa']) . '.pdf';
+                $zip->addFile($fileName, $pdfContent);
+                
+                $countProcessed++;
+            }
+        }
+        
+        $zip->finish();
+    }
+
+    private function getPredikatByScore($score, $predikats, $field = 'nama_predikat')
+    {
+        foreach ($predikats as $p) {
+            if ($score >= $p['min_nilai'] && $score <= $p['max_nilai']) {
+                return $p[$field] ?? '-';
+            }
+        }
+        return '-';
     }
 }

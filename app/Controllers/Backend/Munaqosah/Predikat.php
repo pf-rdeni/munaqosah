@@ -93,9 +93,18 @@ class Predikat extends BaseController
         // Check if user confirmed overwrite
         $allowOverwrite = $this->request->getPost('allow_overwrite');
 
+        // Check Huruf Collision
+        $huruf = $this->request->getPost('predikat_huruf');
+        $hurufCollision = $this->predikatModel->checkHurufCollision($idGrup, $huruf);
+
+        if ($hurufCollision) {
+            return redirect()->back()->withInput()->with('error', 'Huruf Predikat "' . $huruf . '" sudah ada di grup ini.');
+        }
+
         $data = [
             'id_grup_materi'   => $idGrup,
             'nama_predikat'    => $this->request->getPost('nama_predikat'),
+            'predikat_huruf'   => $huruf,
             'min_nilai'        => $min,
             'max_nilai'        => $max,
             'deskripsi_global' => $this->request->getPost('deskripsi_global'),
@@ -138,9 +147,18 @@ class Predikat extends BaseController
         $idGrup = $this->request->getPost('id_grup_materi');
         if ($idGrup === 'global' || empty($idGrup)) $idGrup = null;
 
+        $huruf = $this->request->getPost('predikat_huruf');
+        
+        // Validation Huruf Exclusive
+        $hurufCollision = $this->predikatModel->checkHurufCollision($idGrup, $huruf, $id);
+        if ($hurufCollision) {
+            return redirect()->back()->withInput()->with('error', 'Huruf Predikat "' . $huruf . '" sudah ada di grup ini.');
+        }
+
         $data = [
             'id_grup_materi'   => $idGrup,
             'nama_predikat'    => $this->request->getPost('nama_predikat'),
+            'predikat_huruf'   => $huruf,
             'min_nilai'        => $this->request->getPost('min_nilai'),
             'max_nilai'        => $this->request->getPost('max_nilai'),
             'deskripsi_global' => $this->request->getPost('deskripsi_global'),
@@ -184,6 +202,7 @@ class Predikat extends BaseController
             'user'       => $this->getCurrentUser(),
             'data'       => [
                 'nama_predikat'    => $source['nama_predikat'] . ' (Copy)',
+                'predikat_huruf'   => $source['predikat_huruf'],
                 'min_nilai'        => $source['min_nilai'],
                 'max_nilai'        => $source['max_nilai'],
                 'deskripsi_global' => $source['deskripsi_global'],

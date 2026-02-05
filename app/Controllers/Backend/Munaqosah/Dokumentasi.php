@@ -77,4 +77,13 @@ class Dokumentasi extends BaseController
         ];
         return view('backend/dokumentasi/penjurian', $data);
     }
+
+    public function sertifikat()
+    {
+        $data = [
+            'title' => 'Dokumentasi Sistem Sertifikat',
+            'user'  => $this->getCurrentUser()
+        ];
+        return view('backend/dokumentasi/sertifikat', $data);
+    }
 }

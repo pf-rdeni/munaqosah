@@ -64,6 +64,19 @@
                         <label>Nama Predikat</label>
                         <input type="text" class="form-control" name="nama_predikat" value="<?= isset($data) ? $data['nama_predikat'] : '' ?>" required placeholder="Contoh: Sangat Baik">
                     </div>
+
+                    <div class="form-group">
+                        <label>Huruf (Grade)</label>
+                        <select class="form-control" name="predikat_huruf" required>
+                            <option value="">-- Pilih Huruf --</option>
+                            <?php foreach (range('A', 'Z') as $char): ?>
+                                <option value="<?= $char ?>" <?= (isset($data) && $data['predikat_huruf'] == $char) ? 'selected' : '' ?>>
+                                    <?= $char ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Huruf harus unik dalam satu grup materi.</small>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6">

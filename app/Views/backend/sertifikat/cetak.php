@@ -3,8 +3,13 @@
 <section class="content">
     <div class="container-fluid">
         <div class="card card-primary card-outline">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title"><i class="fas fa-print"></i> Cetak Sertifikat</h3>
+                <div class="card-tools">
+                    <a href="<?= base_url('backend/cetak-sertifikat/print-batch') ?>" class="btn btn-success btn-sm" target="_blank">
+                        <i class="fas fa-file-archive"></i> Cetak Semua (ZIP)
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -23,6 +28,8 @@
                                 
                                 <th rowspan="2" class="align-middle">Total</th>
                                 <th rowspan="2" class="align-middle">Rata-Rata</th>
+                                <th rowspan="2" class="align-middle">Nilai Huruf</th>
+                                <th rowspan="2" class="align-middle">Predikat</th>
                                 <th rowspan="2" class="align-middle">Status</th>
                                 <th rowspan="2" class="align-middle">Peringkat</th>
                             </tr>
@@ -59,6 +66,14 @@
                                 <td class="text-center font-weight-bold"><?= number_format($data['grand_total'], 1) ?></td>
                                 <td class="text-center font-weight-bold <?= ($data['rata_rata'] >= 65) ? 'text-success' : 'text-danger' ?>">
                                     <?= number_format($data['rata_rata'], 1) ?>
+                                </td>
+                                <td class="text-center font-weight-bold">
+                                    <?= esc($data['nilai_huruf']) ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($data['is_complete']): ?>
+                                        <?= esc($data['predikat_label']) ?>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="text-center">
                                     <?php if (!$data['is_complete']): ?>

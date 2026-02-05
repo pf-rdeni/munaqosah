@@ -271,6 +271,12 @@
                                 <p>Sistem Penjurian</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('backend/dokumentasi/sertifikat') ?>" class="nav-link <?= uri_string() == 'backend/dokumentasi/sertifikat' ? 'active' : '' ?>">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Cetak Sertifikat</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <?php endif; ?>

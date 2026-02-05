@@ -30,6 +30,7 @@
                                 <th style="width: 10px">No</th>
                                 <th>Peruntukan</th>
                                 <th>Nama Predikat</th>
+                                <th>Huruf</th>
                                 <th>Range Nilai</th>
                                 <th>Deskripsi Global</th>
                                 <th>Warna (CSS)</th>
@@ -49,6 +50,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td><?= esc($row['nama_predikat']) ?></td>
+                                <td class="text-center font-weight-bold"><?= esc($row['predikat_huruf']) ?></td>
                                 <td>
                                     <span class="badge badge-<?= esc($row['class_css']) ?>"><?= $row['min_nilai'] ?> - <?= $row['max_nilai'] ?></span>
                                 </td>

@@ -109,10 +109,15 @@ class SertifikatFieldModel extends Model
                 'label' => 'Nama Sekolah/TPQ',
                 'sample' => 'SDIT AN-NAHL'
             ],
-             [
+            [
                 'name' => 'predikat',
-                'label' => 'Predikat (Lulus/Tidak)',
-                'sample' => 'LULUS'
+                'label' => 'Predikat (Sebut/Label)',
+                'sample' => 'Sangat Baik'
+            ],
+            [
+                'name' => 'nilai_huruf',
+                'label' => 'Nilai Huruf (Grade)',
+                'sample' => 'A'
             ],
             [
                 'name' => 'nilai_rata_rata',

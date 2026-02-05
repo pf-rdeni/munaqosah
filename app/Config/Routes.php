@@ -43,6 +43,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->group('cetak-sertifikat', ['namespace' => 'App\Controllers\Backend\Munaqosah'], function ($routes) {
         $routes->get('/', 'CetakSertifikat::index');
         $routes->get('print/(:num)', 'CetakSertifikat::print/$1');
+        $routes->get('print-batch', 'CetakSertifikat::printBatch');
     });
 
     // Data Siswa (Pindah ke Munaqosah)
@@ -161,6 +162,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
         $routes->get('penilaian', 'Munaqosah\Dokumentasi::penilaian');
         $routes->get('konfigurasi', 'Munaqosah\Dokumentasi::konfigurasi');
         $routes->get('penjurian', 'Munaqosah\Dokumentasi::penjurian');
+        $routes->get('sertifikat', 'Munaqosah\Dokumentasi::sertifikat');
     });
 
     // Profil User

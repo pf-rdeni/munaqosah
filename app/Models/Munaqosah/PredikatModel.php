@@ -11,7 +11,7 @@ class PredikatModel extends Model
     protected $returnType = 'array';
     protected $useSoftDeletes = false;
     
-    protected $allowedFields    = ['id_grup_materi', 'nama_predikat', 'min_nilai', 'max_nilai', 'deskripsi_global', 'class_css', 'urutan'];
+    protected $allowedFields    = ['id_grup_materi', 'nama_predikat', 'predikat_huruf', 'min_nilai', 'max_nilai', 'deskripsi_global', 'class_css', 'urutan'];
 
     protected $useTimestamps = true;
     protected $createdField = 'created_at';
@@ -44,6 +44,20 @@ class PredikatModel extends Model
         $builder = $this->where('id_grup_materi', $idGrup)
                         ->where('min_nilai', $min)
                         ->where('max_nilai', $max);
+        
+        if ($excludeId) {
+            $builder->where('id !=', $excludeId);
+        }
+
+        return $builder->first();
+    }
+
+    public function checkHurufCollision($idGrup, $huruf, $excludeId = null)
+    {
+        if (empty($huruf)) return null;
+
+        $builder = $this->where('id_grup_materi', $idGrup)
+                        ->where('predikat_huruf', $huruf);
         
         if ($excludeId) {
             $builder->where('id !=', $excludeId);

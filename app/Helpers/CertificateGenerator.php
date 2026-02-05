@@ -181,12 +181,16 @@ class CertificateGenerator
                     <tbody>';
                 
                 $no = 1;
-                foreach ($scoreData['scores'] as $materi => $nilai) {
+                $no = 1;
+                foreach ($scoreData['scores'] as $materi => $data) {
+                    $nilai = $data['nilai'];
+                    $huruf = $data['huruf'];
+                    
                     $html .= '<tr>
                         <td class="text-center">' . $no++ . '</td>
                         <td>' . $materi . '</td>
                         <td class="text-center">' . number_format($nilai, 0) . '</td>
-                        <td class="text-center">' . $this->getGradeLetter(round($nilai)) . '</td>
+                        <td class="text-center">' . $huruf . '</td>
                         <td class="text-center" style="font-style: italic;">' . $this->terbilang(round($nilai)) . '</td>
                     </tr>';
                 }
@@ -201,7 +205,7 @@ class CertificateGenerator
                 $html .= '<tr>
                     <td colspan="2" class="text-right font-bold">Rata-Rata</td>
                     <td class="text-center font-bold">' . number_format($scoreData['avg'], 1) . '</td>
-                    <td class="text-center font-bold">' . $this->getGradeLetter(round($scoreData['avg'])) . '</td>
+                    <td class="text-center font-bold">' . ($scoreData['nilai_huruf'] ?? '-') . '</td>
                     <td class="text-center font-bold" style="font-style: italic;">' . $this->terbilang($scoreData['avg']) . '</td>
                 </tr>';
 
@@ -259,14 +263,8 @@ class CertificateGenerator
         $text = $this->terbilangInteger($integerPart);
         
         // Handle decimal part
-        if (isset($parts[1])) {
+        if (isset($parts[1]) && (int)$parts[1] > 0) {
              $decimals = str_split($parts[1]);
-             // Only add "Koma" if there's actually a decimal part that isn't 0 (though format 1 guarantees usually)
-             // But if it is .0, typically we might exclude it? 
-             // Request says "82.1" -> "Koma Satu". "82.0" -> "Delapan Puluh Dua Koma Nol"? or just "Delapan Puluh Dua"?
-             // Usually for grades, .0 is omitted or said as "Koma Nol".
-             // Given the screenshot showed "81.7", let's assume always print comma if it exists in the formatted string.
-             
              $text .= " Koma";
              foreach($decimals as $d) {
                  $text .= " " . $this->terbilangInteger((int)$d);
@@ -321,6 +319,9 @@ class CertificateGenerator
             case 'F': // File
                 file_put_contents($filename, $output);
                 return true;
+                
+            case 'S': // String (Return)
+                return $output;
         }
     }
 
