@@ -30,6 +30,7 @@
                             </th>
                             <th>No</th>
                             <th>NISN</th>
+                            <th>NIS</th>
                             <th>Nama Siswa</th>
                             <th>JK</th>
                             <th>Tgl Lahir</th>
@@ -61,6 +62,7 @@
                                     </td>
                                     <td><?= $no++ ?></td>
                                     <td><?= $row['nisn'] ?></td>
+                                    <td><?= $row['nis'] ?? '-' ?></td>
                                     <td><?= $row['nama_siswa'] ?></td>
                                     <td><?= $row['jenis_kelamin'] ?></td>
                                     <td><?= $row['tanggal_lahir'] ?></td>

@@ -145,6 +145,7 @@ class Siswa extends BaseController
         // Simpan data
         $data = [
             'nisn'          => $this->request->getPost('nisn'),
+            'nis'           => $this->request->getPost('nis'),
             'nama_siswa'    => $this->cleanInput($this->request->getPost('nama_siswa')),
             'jenis_kelamin' => $this->request->getPost('jenis_kelamin'),
             'tanggal_lahir' => $this->request->getPost('tanggal_lahir'),
@@ -248,6 +249,7 @@ class Siswa extends BaseController
         $rules = [
             'nama_siswa'    => 'required|max_length[100]',
             'jenis_kelamin' => 'required|in_list[L,P]',
+            'nis'           => 'permit_empty|is_unique[tbl_munaqosah_siswa.nis,id,{id}]',
         ];
 
         if (!$this->validate($rules)) {
@@ -256,9 +258,22 @@ class Siswa extends BaseController
                 ->with('errors', $this->validator->getErrors());
         }
 
+        // Ambil data siswa lama untuk cek NIS
+        $existingSiswa = $this->siswaModel->find($id);
+        $existingNis = $existingSiswa['nis'] ?? null;
+        $inputNis = $this->request->getPost('nis');
+
+        // Jika NIS lama ada isinya, dan user mencoba mengubahnya (input berbeda), maka abaikan perubahan (pakai yang lama)
+        // Atau jika kita strict: return error. Tapi user mintanya "tidak bisa diedit".
+        // Di view kita kunci dengan readonly. Di sini kita protect backendnya.
+        if (!empty($existingNis)) {
+            $inputNis = $existingNis; 
+        }
+
         // Update data (Exclude NISN)
         $data = [
             // 'nisn' => $this->request->getPost('nisn'), // NISN tidak boleh diubah
+            'nis'           => $inputNis,
             'nama_siswa'    => $this->cleanInput($this->request->getPost('nama_siswa')),
             'jenis_kelamin' => $this->request->getPost('jenis_kelamin'),
             'tanggal_lahir' => $this->request->getPost('tanggal_lahir'),
@@ -414,24 +429,26 @@ class Siswa extends BaseController
 
         // Set Header
         $sheet->setCellValue('A1', 'NISN');
-        $sheet->setCellValue('B1', 'NAMA SISWA');
-        $sheet->setCellValue('C1', 'JENIS KELAMIN (L/P)');
-        $sheet->setCellValue('D1', 'TANGGAL LAHIR (YYYY-MM-DD)');
-        $sheet->setCellValue('E1', 'TEMPAT LAHIR');
-        $sheet->setCellValue('F1', 'NAMA AYAH');
-        $sheet->setCellValue('G1', 'NAMA IBU');
-        $sheet->setCellValue('H1', 'ALAMAT');
-        $sheet->setCellValue('I1', 'NO HP (Opsional)');
+        $sheet->setCellValue('B1', 'NIS');
+        $sheet->setCellValue('C1', 'NAMA SISWA');
+        $sheet->setCellValue('D1', 'JENIS KELAMIN (L/P)');
+        $sheet->setCellValue('E1', 'TANGGAL LAHIR (YYYY-MM-DD)');
+        $sheet->setCellValue('F1', 'TEMPAT LAHIR');
+        $sheet->setCellValue('G1', 'NAMA AYAH');
+        $sheet->setCellValue('H1', 'NAMA IBU');
+        $sheet->setCellValue('I1', 'ALAMAT');
+        $sheet->setCellValue('J1', 'NO HP (Opsional)');
 
         // Contoh Data
         $sheet->setCellValue('A2', '1234567890');
-        $sheet->setCellValue('B2', 'AHMAD FAUZAN');
-        $sheet->setCellValue('C2', 'L');
-        $sheet->setCellValue('D2', '2015-05-20');
-        $sheet->setCellValue('E2', 'BEKASI');
-        $sheet->setCellValue('F2', 'ABDUL');
-        $sheet->setCellValue('G2', 'SITI');
-        $sheet->setCellValue('H2', 'JL. JAMBU NO. 10');
+        $sheet->setCellValue('B2', '1001');
+        $sheet->setCellValue('C2', 'AHMAD FAUZAN');
+        $sheet->setCellValue('D2', 'L');
+        $sheet->setCellValue('E2', '2015-05-20');
+        $sheet->setCellValue('F2', 'BEKASI');
+        $sheet->setCellValue('G2', 'ABDUL');
+        $sheet->setCellValue('H2', 'SITI');
+        $sheet->setCellValue('I2', 'JL. JAMBU NO. 10');
 
         // Styling Header
         $headerStyle = [
@@ -508,40 +525,46 @@ class Siswa extends BaseController
                     $isValid = true;
                     $errorMsg = null;
 
-                    // LOGIC IMPORT TEMPLATE
-                    if ($importType === 'template') {
-                        if ($key == 1) continue; // Skip header
-                        if (empty($row['A']) && empty($row['B'])) continue; // Skip empty row
+                        $nis = null;
+                        
+                        // LOGIC IMPORT TEMPLATE
+                        if ($importType === 'template') {
+                            if ($key == 1) continue; // Skip header
+                            if (empty($row['A']) && empty($row['C'])) continue; // Skip empty row (Check Name too) or A/B/C
 
-                        $nisn = $row['A'];
-                        $data = [
-                            'nisn'          => $nisn,
-                            'nama_siswa'    => $this->cleanInput($row['B']),
-                            'jenis_kelamin' => strtoupper($row['C']),
-                            'tanggal_lahir' => $row['D'],
-                            'tempat_lahir'  => $this->cleanInput($row['E']),
-                            'nama_ayah'     => $this->cleanInput($row['F']),
-                            'nama_ibu'      => $this->cleanInput($row['G']),
-                            'no_hp'         => $row['I'] ?? null,
-                        ];
-                    } 
-                    // LOGIC IMPORT DAPODIK
-                    else {
-                        if ($key < 7) continue; // Skip header
-                        if (empty($row['B'])) continue; // Skip empty row
+                            $nisn = $row['A'];
+                            $nis  = $row['B'];
+                            $data = [
+                                'nisn'          => $nisn,
+                                'nis'           => $nis,
+                                'nama_siswa'    => $this->cleanInput($row['C']),
+                                'jenis_kelamin' => strtoupper($row['D']),
+                                'tanggal_lahir' => $row['E'],
+                                'tempat_lahir'  => $this->cleanInput($row['F']),
+                                'nama_ayah'     => $this->cleanInput($row['G']),
+                                'nama_ibu'      => $this->cleanInput($row['H']),
+                                'no_hp'         => $row['J'] ?? null,
+                            ];
+                        } 
+                        // LOGIC IMPORT DAPODIK
+                        else {
+                            if ($key < 7) continue; // Skip header
+                            if (empty($row['B'])) continue; // Skip empty row
 
-                        $nisn = $row['E']; 
-                        $data = [
-                            'nisn'          => $nisn,
-                            'nama_siswa'    => $this->cleanInput($row['B']),
-                            'jenis_kelamin' => strtoupper($row['D']),
-                            'tanggal_lahir' => $row['G'],
-                            'tempat_lahir'  => $this->cleanInput($row['F']),
-                            'nama_ayah'     => $this->cleanInput($row['Y']),
-                            'nama_ibu'      => $this->cleanInput($row['AE']),
-                            'no_hp'         => $row['T'] ?? null, // Kolom T Dapodik
-                        ];
-                    }
+                            $nisn = $row['E']; 
+                            $nis  = $row['C']; // Dapodik Column C
+                            $data = [
+                                'nisn'          => $nisn,
+                                'nis'           => $nis,
+                                'nama_siswa'    => $this->cleanInput($row['B']),
+                                'jenis_kelamin' => strtoupper($row['D']),
+                                'tanggal_lahir' => $row['G'],
+                                'tempat_lahir'  => $this->cleanInput($row['F']),
+                                'nama_ayah'     => $this->cleanInput($row['Y']),
+                                'nama_ibu'      => $this->cleanInput($row['AE']),
+                                'no_hp'         => $row['T'] ?? null, // Kolom T Dapodik
+                            ];
+                        }
 
                     // Validasi Dasar (Duplikat NISN)
                     if (empty($nisn)) {
@@ -634,19 +657,21 @@ class Siswa extends BaseController
                 if ($importType === 'template') {
                     $data = [
                         'nisn'          => $row['A'],
-                        'nama_siswa'    => $this->cleanInput($row['B']),
-                        'jenis_kelamin' => strtoupper($row['C']),
-                        'tanggal_lahir' => $row['D'],
-                        'tempat_lahir'  => $this->cleanInput($row['E']),
-                        'nama_ayah'     => $this->cleanInput($row['F']),
-                        'nama_ibu'      => $this->cleanInput($row['G']),
-                        'alamat'        => $this->cleanInput($row['H']),
-                        'no_hp'         => $row['I'] ?? null,
+                        'nis'           => $row['B'],
+                        'nama_siswa'    => $this->cleanInput($row['C']),
+                        'jenis_kelamin' => strtoupper($row['D']),
+                        'tanggal_lahir' => $row['E'],
+                        'tempat_lahir'  => $this->cleanInput($row['F']),
+                        'nama_ayah'     => $this->cleanInput($row['G']),
+                        'nama_ibu'      => $this->cleanInput($row['H']),
+                        'alamat'        => $this->cleanInput($row['I']),
+                        'no_hp'         => $row['J'] ?? null,
                         'status'        => 'aktif',
                     ];
                 } else {
                     $data = [
                         'nisn'          => $row['E'],
+                        'nis'           => $row['C'],
                         'nama_siswa'    => $this->cleanInput($row['B']),
                         'jenis_kelamin' => strtoupper($row['D']),
                         'tanggal_lahir' => $row['G'],

@@ -71,6 +71,17 @@
                     
                     <div class="row">
                         <div class="col-md-6">
+                             <div class="form-group">
+                                <label for="nis">NIS</label>
+                                <input type="text" class="form-control" id="nis" name="nis" 
+                                       value="<?= old('nis', $siswa['nis'] ?? '') ?>" placeholder="Masukkan NIS"
+                                       <?= !empty($siswa['nis']) ? 'readonly' : '' ?>>
+                                <small class="form-text text-muted">
+                                    <?= !empty($siswa['nis']) ? 'NIS tidak dapat diubah karena sudah terisi.' : 'Nomor Induk Siswa (Lokal)' ?>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="nisn">NISN <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nisn" name="nisn" 
@@ -78,7 +89,10 @@
                                 <small class="form-text text-muted">NISN tidak dapat diubah (Primary Key)</small>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                    </div>
+                    
+                    <div class="row">
+                         <div class="col-md-12">
                             <div class="form-group">
                                 <label for="nama_siswa">Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nama_siswa" name="nama_siswa" 

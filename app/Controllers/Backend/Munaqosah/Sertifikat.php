@@ -1,0 +1,282 @@
+<?php
+
+namespace App\Controllers\Backend\Munaqosah;
+
+use App\Controllers\BaseController;
+use App\Models\Backend\SertifikatTemplateModel;
+use App\Models\Backend\SertifikatFieldModel;
+use App\Helpers\CertificateGenerator;
+
+class Sertifikat extends BaseController
+{
+    protected $templateModel;
+    protected $fieldModel;
+
+    public function __construct()
+    {
+        $this->templateModel = new SertifikatTemplateModel();
+        $this->fieldModel = new SertifikatFieldModel();
+    }
+
+    /**
+     * Halaman utama pengaturan sertifikat
+     */
+    public function index()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('/login');
+
+        // Get existing templates
+        $templateDepan = $this->templateModel->getTemplateByHalaman('depan');
+        $templateBelakang = $this->templateModel->getTemplateByHalaman('belakang');
+
+        $data = [
+            'page_title' => 'Pengaturan Sertifikat Munaqosah',
+            'template_depan' => $templateDepan,
+            'template_belakang' => $templateBelakang,
+            'user' => $this->getCurrentUser(),
+        ];
+
+        return view('backend/sertifikat/setting', $data);
+    }
+
+    /**
+     * Upload template (AJAX)
+     */
+    public function uploadTemplate()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Session expired']);
+        }
+
+        $halaman = $this->request->getPost('halaman'); // depan or belakang
+        $orientation = $this->request->getPost('orientation') ?? 'landscape';
+
+        if (!in_array($halaman, ['depan', 'belakang'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Halaman tidak valid']);
+        }
+
+        $file = $this->request->getFile('template_file');
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'File template harus diupload']);
+        }
+
+        // Validate file type
+        if (!in_array($file->getExtension(), ['jpg', 'jpeg', 'png'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'File harus berformat JPG atau PNG']);
+        }
+
+        // Create upload directory if not exists
+        $uploadPath = FCPATH . 'uploads/sertifikat/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        // Generate unique filename
+        $newName = 'template_' . $halaman . '_' . time() . '.' . $file->getExtension();
+        
+        try {
+            // Move file
+            $file->move($uploadPath, $newName);
+
+            // Get image dimensions
+            $imagePath = $uploadPath . $newName;
+            list($width, $height) = getimagesize($imagePath);
+
+            // Check if template exists for this page
+            $existingTemplate = $this->templateModel->getTemplateByHalaman($halaman);
+            
+            if ($existingTemplate) {
+                // UPDATE existing record
+                
+                // 1. Delete old physical file
+                if (!empty($existingTemplate['file_template'])) {
+                    $oldFilePath = FCPATH . 'uploads/' . $existingTemplate['file_template'];
+                    if (file_exists($oldFilePath)) {
+                        unlink($oldFilePath);
+                    }
+                }
+
+                // 2. Prepare update data
+                $updateData = [
+                    'file_template' => 'sertifikat/' . $newName,
+                    'width' => $width,
+                    'height' => $height,
+                    'orientation' => $orientation,
+                ];
+
+                // 3. Update DB
+                if ($this->templateModel->update($existingTemplate['id'], $updateData)) {
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'message' => 'Template berhasil diperbarui (Field konfigurasi tetap tersimpan)',
+                        'template_id' => $existingTemplate['id']
+                    ]);
+                }
+            } else {
+                // INSERT new record
+                $data = [
+                    'halaman' => $halaman,
+                    'file_template' => 'sertifikat/' . $newName,
+                    'width' => $width,
+                    'height' => $height,
+                    'orientation' => $orientation,
+                ];
+
+                if ($this->templateModel->insert($data)) {
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'message' => 'Template berhasil diupload',
+                        'template_id' => $this->templateModel->getInsertID()
+                    ]);
+                }
+            }
+
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menyimpan template']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Halaman konfigurasi field
+     */
+    public function configure($halaman)
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('/login');
+
+        $template = $this->templateModel->getTemplateByHalaman($halaman);
+        if (!$template) {
+            return redirect()->to(base_url('backend/sertifikat'))->with('error', 'Template belum diupload');
+        }
+
+        $fields = $this->fieldModel->getFieldsByTemplate($template['id']);
+        $availableFields = $this->fieldModel->getAvailableFields($halaman);
+
+        $data = [
+            'page_title' => 'Konfigurasi Sertifikat - ' . ucfirst($halaman),
+            'template' => $template,
+            'fields' => $fields,
+            'available_fields' => $availableFields,
+            'halaman' => $halaman,
+            'user' => $this->getCurrentUser(),
+        ];
+
+        return view('backend/sertifikat/configure', $data);
+    }
+
+    /**
+     * Simpan konfigurasi field (AJAX)
+     */
+    public function saveFieldConfig()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Session expired']);
+        }
+
+        $templateId = $this->request->getPost('template_id');
+        $fieldsData = $this->request->getPost('fields'); // Array of field configurations
+
+        if (!$templateId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'ID Template tidak valid']);
+        }
+
+        $this->templateModel->db->transStart();
+
+        try {
+            // 1. Delete existing fields
+            $this->fieldModel->where('template_id', $templateId)->delete();
+
+            // 2. Insert new fields
+            if (!empty($fieldsData) && is_array($fieldsData)) {
+                $insertData = [];
+                foreach ($fieldsData as $field) {
+                    $insertData[] = [
+                        'template_id' => $templateId,
+                        'field_name' => $field['name'],
+                        'field_label' => $field['label'],
+                        'pos_x' => (int) $field['x'],
+                        'pos_y' => (int) $field['y'],
+                        'font_family' => $field['font_family'] ?? 'Arial',
+                        'font_size' => (int) ($field['font_size'] ?? 12),
+                        'font_style' => $field['font_style'] ?? 'N',
+                        'text_align' => $field['text_align'] ?? 'L',
+                        'text_color' => $field['text_color'] ?? '#000000',
+                        'max_width' => (int) ($field['max_width'] ?? 0),
+                    ];
+                }
+
+                if (!empty($insertData)) {
+                    $this->fieldModel->insertBatch($insertData);
+                }
+            }
+
+            $this->templateModel->db->transComplete();
+
+            if ($this->templateModel->db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menyimpan konfigurasi']);
+            }
+
+            return $this->response->setJSON(['success' => true, 'message' => 'Konfigurasi berhasil disimpan']);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview Sertifikat (Dummy Data)
+     */
+    public function preview($halaman)
+    {
+        $template = $this->templateModel->getTemplateByHalaman($halaman);
+        if (!$template) {
+            return "Template tidak ditemukan";
+        }
+
+        $fields = $this->fieldModel->getFieldsByTemplate($template['id']);
+        
+        // Dummy Data Generator
+        $dummyData = [
+            'nama_peserta' => 'AHMAD FAUZI BIN ABDULLAH',
+            'nomor_peserta' => '001/MUNA/2026',
+            'tempat_lahir' => 'Bandung',
+            'tanggal_lahir' => '15 Januari 2015',
+            'nama_sekolah' => 'SDIT AN-NAHL',
+            'predikat' => 'MUMTAZ',
+            'nilai_rata_rata' => '95.50',
+            'tanggal_terbit' => '04 Februari 2026',
+            'nomor_sertifikat' => 'SERT/2026/001',
+            // Simple QR placeholder - in real app use Helper to generate QR image path
+            'qr_code' => '', // Empty for now or path to dummy QR
+            'foto_peserta' => '', // Empty
+        ];
+
+        // Generate PDF
+        try {
+            $generator = new CertificateGenerator($template, $fields);
+            $generator->setData($dummyData)->generate();
+            
+            // Stream inline
+            $generator->stream('Preview_Sertifikat_' . ucfirst($halaman) . '.pdf', ['Attachment' => false]);
+            
+        } catch (\Exception $e) {
+            return "Error: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * Delete Template
+     */
+    public function delete($halaman)
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('/login');
+
+        $template = $this->templateModel->getTemplateByHalaman($halaman);
+        if ($template) {
+            $this->templateModel->deleteTemplate($template['id']);
+            return redirect()->back()->with('success', 'Template berhasil dihapus');
+        }
+        return redirect()->back()->with('error', 'Template tidak ditemukan');
+    }
+}

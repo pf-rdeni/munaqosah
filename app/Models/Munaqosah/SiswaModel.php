@@ -31,6 +31,8 @@ class SiswaModel extends Model
     // Kolom yang boleh diisi
     protected $allowedFields = [
         'nisn',
+        'nisn',
+        'nis',
         'nama_siswa',
         'jenis_kelamin',
         'tanggal_lahir',
@@ -52,6 +54,7 @@ class SiswaModel extends Model
     // Aturan validasi
     protected $validationRules = [
         'nisn'       => 'required|max_length[20]|is_unique[tbl_munaqosah_siswa.nisn,id,{id}]',
+        'nis'        => 'permit_empty|max_length[20]|is_unique[tbl_munaqosah_siswa.nis,id,{id}]',
         'nama_siswa' => 'required|max_length[100]',
         'jenis_kelamin' => 'required|in_list[L,P]',
     ];
@@ -108,6 +111,7 @@ class SiswaModel extends Model
     {
         return $this->like('nama_siswa', $keyword)
                     ->orLike('nisn', $keyword)
+                    ->orLike('nis', $keyword)
                     ->orderBy('nama_siswa', 'ASC')
                     ->findAll();
     }
@@ -141,6 +145,7 @@ class SiswaModel extends Model
             $search = $request['search']['value'];
             $builder->groupStart()
                     ->like('nisn', $search)
+                    ->orLike('nis', $search)
                     ->orLike('nama_siswa', $search)
                     ->orLike('alamat', $search)
                     ->groupEnd();

@@ -60,13 +60,24 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label for="nis">NIS</label>
+                                <input type="text" class="form-control" id="nis" name="nis" 
+                                       value="<?= old('nis') ?>" placeholder="Masukkan NIS">
+                                <small class="form-text text-muted">Nomor Induk Siswa (Lokal)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label for="nisn">NISN <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nisn" name="nisn" 
                                        value="<?= old('nisn') ?>" placeholder="Masukkan NISN" required>
                                 <small class="form-text text-muted">Nomor Induk Siswa Nasional</small>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                    </div>
+                    
+                    <div class="row">
+                         <div class="col-md-12">
                             <div class="form-group">
                                 <label for="nama_siswa">Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="nama_siswa" name="nama_siswa" 

@@ -29,6 +29,22 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->get('dashboard', 'Munaqosah\Dashboard::index');
     $routes->get('index', 'Munaqosah\Dashboard::index'); // Fix 404 for backend/index
     
+    // Sertifikat Munaqosah
+    $routes->group('sertifikat', ['namespace' => 'App\Controllers\Backend\Munaqosah'], function ($routes) {
+        $routes->get('/', 'Sertifikat::index');
+        $routes->post('upload', 'Sertifikat::uploadTemplate');
+        $routes->get('configure/(:any)', 'Sertifikat::configure/$1');
+        $routes->post('save-config', 'Sertifikat::saveFieldConfig');
+        $routes->get('preview/(:any)', 'Sertifikat::preview/$1');
+        $routes->get('delete/(:any)', 'Sertifikat::delete/$1');
+    });
+
+    // Cetak Sertifikat
+    $routes->group('cetak-sertifikat', ['namespace' => 'App\Controllers\Backend\Munaqosah'], function ($routes) {
+        $routes->get('/', 'CetakSertifikat::index');
+        $routes->get('print/(:num)', 'CetakSertifikat::print/$1');
+    });
+
     // Data Siswa (Pindah ke Munaqosah)
     $routes->get('siswa', 'Munaqosah\Siswa::index');
     $routes->get('siswa/create', 'Munaqosah\Siswa::create');

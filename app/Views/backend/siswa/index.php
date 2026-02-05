@@ -43,7 +43,7 @@
                             <tr>
                                 <th width="5%">No</th>
                                 <th width="8%">Foto</th>
-                                <th width="12%">NISN</th>
+                                <th width="15%">NIS / NISN</th>
                                 <th width="25%">Nama Siswa</th>
                                 <th width="8%">JK</th>
                                 <th width="10%">Status</th>
@@ -76,7 +76,10 @@
                                                  title="Double-klik untuk edit foto"
                                                  onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=<?= urlencode($siswa['nama_siswa']) ?>&background=random&size=40'">
                                         </td>
-                                        <td><?= esc($siswa['nisn']) ?></td>
+                                        <td>
+                                            <span class="d-block font-weight-bold text-primary"><?= esc($siswa['nis'] ?? '-') ?></span>
+                                            <small class="text-muted"><?= esc($siswa['nisn']) ?></small>
+                                        </td>
                                         <td><?= esc($siswa['nama_siswa']) ?></td>
                                         <td class="text-center">
                                             <?php if ($siswa['jenis_kelamin'] == 'L'): ?>

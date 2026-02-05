@@ -106,6 +106,13 @@
                         <p>Monitoring Nilai</p>
                     </a>
                 </li>
+                <!-- Cetak Sertifikat -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/cetak-sertifikat') ?>" class="nav-link <?= strpos(uri_string(), 'cetak-sertifikat') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-print"></i>
+                        <p>Cetak Sertifikat</p>
+                    </a>
+                </li>
                 <?php endif; ?>
 
                 <?php if (in_array('admin', $userGroups) || in_array('panitia', $userGroups)): ?>
@@ -152,6 +159,14 @@
                     <a href="<?= base_url('backend/predikat') ?>" class="nav-link <?= strpos(uri_string(), 'backend/predikat') !== false ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-star-half-alt"></i>
                         <p>Kriteria Skor</p>
+                    </a>
+                </li>
+
+                <!-- Pengaturan Sertifikat -->
+                <li class="nav-item">
+                    <a href="<?= base_url('backend/sertifikat') ?>" class="nav-link <?= strpos(uri_string(), 'backend/sertifikat') !== false ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-certificate"></i>
+                        <p>Pengaturan Sertifikat</p>
                     </a>
                 </li>
                 <?php endif; ?>
