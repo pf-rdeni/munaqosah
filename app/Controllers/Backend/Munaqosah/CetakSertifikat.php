@@ -36,7 +36,7 @@ class CetakSertifikat extends BaseController
     public function index()
     {
         if (!$this->isLoggedIn()) return redirect()->to('/login');
-        if (!in_groups(['admin', 'operator', 'kepala'])) return redirect()->to('/backend/dashboard');
+        if (!in_groups(['admin', 'operator', 'kepala', 'panitia'])) return redirect()->to('/backend/dashboard');
 
         $tahunAjaran = $this->getTahunAjaran();
 

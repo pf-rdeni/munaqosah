@@ -98,7 +98,7 @@
                 </li>
                 <?php endif; ?>
                 
-                <?php if (in_array('admin', $userGroups) || in_array('operator', $userGroups) || in_array('kepala', $userGroups)): ?>
+                <?php if (in_array('admin', $userGroups) || in_array('operator', $userGroups) || in_array('kepala', $userGroups) || in_array('panitia', $userGroups)): ?>
                 <!-- Monitoring Nilai -->
                 <li class="nav-item">
                     <a href="<?= base_url('backend/monitoring/nilai') ?>" class="nav-link <?= strpos(uri_string(), 'monitoring/nilai') !== false ? 'active' : '' ?>">
