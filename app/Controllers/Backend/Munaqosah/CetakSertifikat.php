@@ -294,12 +294,7 @@ class CetakSertifikat extends BaseController
                  // Let's rely on Global for now as per previous context "ambil yang gelobal".
                  // "penentuan rang A, B dan lainya melihat dari tabel predikat rang tertinggi adalah A dan mengikuti rang ke bawahnya, ambil yang gelobal" -> confirmed global.
                  
-                 // Info logging for production debugging
-                 log_message('info', 'Calculating grade for ' . $m['nama_materi'] . ' | Score: ' . $materiSubtotal . ' | Predicates count: ' . count($globalPredikats));
-                 
                  foreach ($globalPredikats as $pred) {
-                    log_message('info', 'Checking predicate: ' . ($pred['nama_predikat'] ?? 'N/A') . ' | Range: ' . $pred['min_nilai'] . '-' . $pred['max_nilai'] . ' | Letter: ' . ($pred['predikat_huruf'] ?? 'NULL'));
-                    
                     // Cast to float to ensure numeric comparison
                     $score = (float)$materiSubtotal;
                     $minNilai = (float)$pred['min_nilai'];
@@ -313,13 +308,8 @@ class CetakSertifikat extends BaseController
                             $gradeLetter = strtoupper(substr($pred['nama_predikat'], 0, 1));
                         }
                         $gradeLetter = $gradeLetter ?: '-';
-                        log_message('info', 'MATCHED! Grade letter: ' . $gradeLetter);
                         break;
                     }
-                 }
-                 
-                 if ($gradeLetter === '-') {
-                     log_message('info', 'NO MATCH FOUND for score: ' . $materiSubtotal);
                  }
 
                  $scores[$m['nama_materi']] = [
