@@ -415,8 +415,59 @@ class CertificateGenerator
                          $html .= '<div class="field" style="' . $style . '"><img src="' . $value . '" style="' . $imgStyle . '"></div>';
                     }
                 } else {
-                    // Text
-                    $html .= '<div class="field" style="' . $style . '">' . htmlspecialchars($value) . '</div>';
+                    // Text - Check if border is enabled
+                    // Parse border_settings JSON
+                    $borderEnabled = false;
+                    $borderWidth = 1;
+                    $borderColor = '#000000';
+                    
+                    if (!empty($field['border_settings'])) {
+                        $borderSettings = is_string($field['border_settings']) 
+                            ? json_decode($field['border_settings'], true) 
+                            : $field['border_settings'];
+                        
+                        if ($borderSettings) {
+                            $borderEnabled = $borderSettings['enabled'] ?? false;
+                            $borderColor = $borderSettings['color'] ?? '#000000';
+                            $borderWidth = (int)($borderSettings['width'] ?? 1);
+                        }
+                    }
+                    
+                    if ($borderEnabled) {
+                        // Layered approach: render border layers underneath main text
+                        // Create container for layered text
+                        $containerStyle = 'position: absolute; left: ' . $field['pos_x'] . 'px; top: ' . $field['pos_y'] . 'px;';
+                        $html .= '<div style="' . $containerStyle . '">';
+                        
+                        // Generate smooth circular offsets (32 points for smoother border)
+                        $offsets = [];
+                        $numPoints = 32; // More points = smoother circle
+                        for ($i = 0; $i < $numPoints; $i++) {
+                            $angle = ($i / $numPoints) * 2 * M_PI;
+                            $x = round($borderWidth * cos($angle), 2);
+                            $y = round($borderWidth * sin($angle), 2);
+                            $offsets[] = [$x, $y];
+                        }
+                        
+                        // Build style without position (will be in container)
+                        $textStyle = $this->buildFieldStyleWithoutPosition($field, $borderColor);
+                        
+                        // Render border layers
+                        foreach ($offsets as $offset) {
+                            $offsetStyle = 'position: absolute; left: ' . $offset[0] . 'px; top: ' . $offset[1] . 'px; ' . $textStyle;
+                            $html .= '<div style="' . $offsetStyle . '">' . htmlspecialchars($value) . '</div>';
+                        }
+                        
+                        // Render main text on top
+                        $mainStyle = 'position: relative; ' . $textStyle;
+                        $mainStyle = str_replace('color: ' . $borderColor, 'color: ' . $field['text_color'], $mainStyle);
+                        $html .= '<div style="' . $mainStyle . '">' . htmlspecialchars($value) . '</div>';
+                        
+                        $html .= '</div>';
+                    } else {
+                        // Normal text without border
+                        $html .= '<div class="field" style="' . $style . '">' . htmlspecialchars($value) . '</div>';
+                    }
                 }
             }
         }
@@ -466,11 +517,91 @@ class CertificateGenerator
         
         // Color
         $style[] = 'color: ' . $field['text_color'];
+
+        // Border / Stroke (Text Outline)
+        if (!empty($field['has_border']) && $field['has_border']) {
+            $borderWidth = (int)($field['border_width'] ?? 1);
+            $borderColor = $field['border_color'] ?? '#000000';
+            
+            // 1. Try standard/webkit stroke
+            $style[] = "-webkit-text-stroke: " . ($borderWidth) . "px " . $borderColor;
+            
+            // 2. Add text-shadow emulation (Backup for PDF engines that ignore stroke)
+            // Simulating stroke with multiple shadows
+            $shadows = [];
+            // Use 8 points for > 1px to ensure coverage
+            if ($borderWidth > 0) {
+                 $w = $borderWidth;
+                 // Cardinals
+                 $shadows[] = "$w" . "px 0 0 $borderColor";
+                 $shadows[] = "-$w" . "px 0 0 $borderColor";
+                 $shadows[] = "0 $w" . "px 0 $borderColor";
+                 $shadows[] = "0 -$w" . "px 0 $borderColor";
+                 
+                 // Diagonals for smoother look if width > 1
+                 if ($w > 1) {
+                     $d = number_format($w * 0.707, 1, '.', ''); // sin(45) approx
+                     $shadows[] = "$d" . "px $d" . "px 0 $borderColor";
+                     $shadows[] = "$d" . "px -$d" . "px 0 $borderColor";
+                     $shadows[] = "-$d" . "px $d" . "px 0 $borderColor";
+                     $shadows[] = "-$d" . "px -$d" . "px 0 $borderColor";
+                 }
+            }
+            if (!empty($shadows)) {
+                $style[] = "text-shadow: " . implode(', ', $shadows);
+            }
+        }
         
         // Max width
         if ($field['max_width'] > 0) {
             $style[] = 'max-width: ' . $field['max_width'] . 'px';
         }
+        
+        return implode('; ', $style);
+    }
+
+    /**
+     * Build CSS style for field without position (for layered rendering)
+     */
+    protected function buildFieldStyleWithoutPosition($field, $overrideColor = null)
+    {
+        $style = [];
+        
+        // Font Mapping
+        $fontFamily = $this->getFontMapping($field['font_family']);
+        $style[] = "font-family: {$fontFamily}";
+        $style[] = 'font-size: ' . $field['font_size'] . 'px';
+        
+        // Font style
+        if (strpos($field['font_style'], 'B') !== false) {
+            $style[] = 'font-weight: bold';
+        }
+        if (strpos($field['font_style'], 'I') !== false) {
+            $style[] = 'font-style: italic';
+        }
+        
+        // Text align
+        $textAlign = 'left';
+        if ($field['text_align'] === 'C') {
+            $textAlign = 'center';
+            $style[] = 'transform: translateX(-50%)';
+        } elseif ($field['text_align'] === 'R') {
+            $textAlign = 'right';
+            $style[] = 'transform: translateX(-100%)';
+        }
+        $style[] = 'text-align: ' . $textAlign;
+        
+        // Color (use override if provided, otherwise use field color)
+        $color = $overrideColor ?? $field['text_color'];
+        $style[] = 'color: ' . $color;
+        
+        // Max width
+        if ($field['max_width'] > 0) {
+            $style[] = 'max-width: ' . $field['max_width'] . 'px';
+        }
+        
+        // White-space
+        $style[] = 'white-space: nowrap';
         
         return implode('; ', $style);
     }

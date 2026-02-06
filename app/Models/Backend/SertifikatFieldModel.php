@@ -23,7 +23,8 @@ class SertifikatFieldModel extends Model
         'font_style',
         'text_align',
         'text_color',
-        'max_width'
+        'max_width',
+        'border_settings'
     ];
 
     protected $useTimestamps = true;

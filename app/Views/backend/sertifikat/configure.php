@@ -43,6 +43,9 @@
                                         <li><strong>Drag & drop</strong> untuk memindahkan posisi</li>
                                         <li><strong>Resize handle</strong> (kotak biru) untuk mengubah ukuran font</li>
                                         <li><strong>Arrow keys</strong> untuk pergerakan presisi (+ Shift = 10px)</li>
+                                        <li><strong>Zoom:</strong> Tombol +/- atau Ctrl+Scroll</li>
+                                        <li><strong>Pan:</strong> Space+Drag atau Middle Mouse</li>
+                                        <li><strong>Mobile:</strong> Pinch untuk zoom, drag untuk geser</li>
                                         <li>Klik <strong>Preview PDF</strong> untuk melihat hasil akhir</li>
                                     </ul>
                                 </small>
@@ -93,17 +96,28 @@
                     <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-eye"></i> Preview Template</h3>
                         <div class="card-tools">
-                            <button type="button" class="btn btn-tool" id="btnTogglePreview">
+                            <!-- Zoom Controls -->
+                            <button type="button" class="btn btn-sm btn-secondary" id="btnZoomOut" title="Zoom Out">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <span class="badge badge-light mx-1" id="zoomIndicator">100%</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btnZoomIn" title="Zoom In">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary ml-1" id="btnZoomReset" title="Reset Zoom">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool ml-2" id="btnTogglePreview">
                                 <i class="fas fa-sync"></i> Refresh Canvas
                             </button>
                         </div>
                     </div>
-                    <div class="card-body" style="background: #f4f4f4; overflow: auto; text-align: center;">
-                        <div style="position: relative; display: inline-block;">
+                    <div class="card-body" id="canvasContainer" style="background: #f4f4f4; overflow: auto; text-align: center; position: relative; cursor: grab; max-height: calc(100vh - 200px);">
+                        <div id="canvasWrapper" style="position: relative; display: inline-block; transform-origin: center top; transition: transform 0.1s ease-out;">
                             <canvas id="templateCanvas" 
                                     width="<?= $template['width'] ?>" 
                                     height="<?= $template['height'] ?>"
-                                    style="border: 1px solid #ddd; cursor: crosshair; max-width: 100%; height: auto;">
+                                    style="border: 1px solid #ddd; cursor: crosshair; max-width: none; height: auto;">
                             </canvas>
                         </div>
                     </div>
@@ -131,6 +145,13 @@
     let dragOffset = {x: 0, y: 0};
     var hasUnsavedChanges = false;
 
+    // Zoom and Pan variables
+    let zoomLevel = 1.0;
+    let panX = 0, panY = 0;
+    let isPanning = false;
+    let panStartX = 0, panStartY = 0;
+    let lastTouchDistance = 0;
+
     $(document).ready(function() {
         canvas = document.getElementById('templateCanvas');
         ctx = canvas.getContext('2d');
@@ -139,24 +160,44 @@
         templateImage.src = $('#templatePath').val();
         templateImage.onload = function() {
             drawCanvas();
+            // Auto-fit canvas to viewport on initial load
+            setTimeout(function() {
+                fitCanvasToViewport();
+                centerCanvas();
+            }, 100);
         };
 
         // Load existing fields from DB
         <?php if (!empty($fields)): ?>
         var dbFields = <?= json_encode($fields) ?>;
         fields = dbFields.map(function(f) {
+            // Parse border_settings JSON
+            var borderSettings = {enabled: false, color: '#000000', width: 1};
+            if (f.border_settings) {
+                try {
+                    borderSettings = typeof f.border_settings === 'string' 
+                        ? JSON.parse(f.border_settings) 
+                        : f.border_settings;
+                } catch(e) {
+                    console.error('Error parsing border_settings:', e);
+                }
+            }
+            
             return {
                 name: f.field_name,
                 label: f.field_label,
                 sample: getSampleText(f.field_name, f.field_label), 
                 x: parseFloat(f.pos_x),
                 y: parseFloat(f.pos_y),
-                font_family: f.font_family,
+                font_family: f.font_family || 'Arial',
                 font_size: parseInt(f.font_size),
                 font_style: f.font_style,
                 text_align: f.text_align,
                 text_color: f.text_color,
-                max_width: parseInt(f.max_width)
+                max_width: parseInt(f.max_width),
+                has_border: borderSettings.enabled || false,
+                border_color: borderSettings.color || '#000000',
+                border_width: parseInt(borderSettings.width) || 1
             };
         });
         <?php endif; ?>
@@ -190,7 +231,10 @@
                 font_style: 'B',
                 text_align: 'C',
                 text_color: '#000000',
-                max_width: 0
+                max_width: 0,
+                has_border: false,
+                border_color: '#000000',
+                border_width: 1
             };
 
             fields.push(field);
@@ -384,6 +428,185 @@
                 markAsDirty();
             }
         });
+
+        // ========== ZOOM AND PAN INITIALIZATION ==========
+        
+        // Zoom button handlers
+        $('#btnZoomIn').click(function() {
+            setZoom(zoomLevel + 0.25);
+        });
+
+        $('#btnZoomOut').click(function() {
+            setZoom(zoomLevel - 0.25);
+        });
+
+        $('#btnZoomReset').click(function() {
+            panX = 0;
+            panY = 0;
+            fitCanvasToViewport();
+            // Center the canvas after fit
+            setTimeout(function() {
+                centerCanvas();
+            }, 50);
+        });
+
+        // Mouse wheel zoom
+        const canvasContainer = document.getElementById('canvasContainer');
+        canvasContainer.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                setZoom(zoomLevel + delta);
+            }
+        }, { passive: false });
+
+        // Pan with middle mouse button or space+drag
+        let spacePressed = false;
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' && !e.repeat) {
+                spacePressed = true;
+                canvasContainer.style.cursor = 'grab';
+            }
+        });
+
+        document.addEventListener('keyup', function(e) {
+            if (e.code === 'Space') {
+                spacePressed = false;
+                canvasContainer.style.cursor = 'grab';
+                if (isPanning) {
+                    isPanning = false;
+                    canvasContainer.style.cursor = 'grab';
+                }
+            }
+        });
+
+        canvasContainer.addEventListener('mousedown', function(e) {
+            if (e.button === 1 || (e.button === 0 && spacePressed)) {
+                e.preventDefault();
+                isPanning = true;
+                panStartX = e.clientX - canvasContainer.scrollLeft;
+                panStartY = e.clientY - canvasContainer.scrollTop;
+                canvasContainer.style.cursor = 'grabbing';
+            }
+        });
+
+        canvasContainer.addEventListener('mousemove', function(e) {
+            if (isPanning) {
+                e.preventDefault();
+                const x = e.clientX - panStartX;
+                const y = e.clientY - panStartY;
+                canvasContainer.scrollLeft = -x;
+                canvasContainer.scrollTop = -y;
+            }
+        });
+
+        canvasContainer.addEventListener('mouseup', function(e) {
+            if (isPanning) {
+                isPanning = false;
+                canvasContainer.style.cursor = spacePressed ? 'grab' : 'grab';
+            }
+        });
+
+        canvasContainer.addEventListener('mouseleave', function() {
+            if (isPanning) {
+                isPanning = false;
+                canvasContainer.style.cursor = 'grab';
+            }
+        });
+
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                // Pinch to zoom
+                e.preventDefault();
+                lastTouchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+            } else if (e.touches.length === 1) {
+                // Single touch - handle field interaction
+                const touch = e.touches[0];
+                const pos = getCanvasMousePos(touch);
+                
+                // First check if touching resize handle of selected field
+                if (selectedFieldIndex >= 0) {
+                    const field = fields[selectedFieldIndex];
+                    if (field._handleBounds) {
+                        const hb = field._handleBounds;
+                        if (pos.x >= hb.x && pos.x <= hb.x + hb.width &&
+                            pos.y >= hb.y && pos.y <= hb.y + hb.height) {
+                            // Touching resize handle
+                            isResizing = true;
+                            resizeStartY = touch.clientY;
+                            resizeStartFontSize = field.font_size;
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                }
+                
+                // Check if touching a field
+                for (let i = fields.length - 1; i >= 0; i--) {
+                    const dims = getFieldDimensions(fields[i]);
+                    if (pos.x >= dims.x && pos.x <= dims.x + dims.width &&
+                        pos.y >= dims.y && pos.y <= dims.y + dims.height) {
+                        
+                        selectedFieldIndex = i;
+                        isDragging = true;
+                        dragOffset.x = pos.x - fields[i].x;
+                        dragOffset.y = pos.y - fields[i].y;
+                        updateFieldForm();
+                        drawCanvas();
+                        e.preventDefault();
+                        break;
+                    }
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                e.preventDefault();
+                const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
+                if (lastTouchDistance > 0) {
+                    const delta = (currentDistance - lastTouchDistance) * 0.01;
+                    setZoom(zoomLevel + delta);
+                }
+                lastTouchDistance = currentDistance;
+            } else if (e.touches.length === 1 && selectedFieldIndex >= 0) {
+                const touch = e.touches[0];
+                
+                if (isResizing) {
+                    // Resize field
+                    e.preventDefault();
+                    const deltaY = touch.clientY - resizeStartY;
+                    const newSize = Math.max(8, Math.min(200, resizeStartFontSize + Math.round(deltaY / 2)));
+                    fields[selectedFieldIndex].font_size = newSize;
+                    updateFieldForm();
+                    drawCanvas();
+                    markAsDirty();
+                } else if (isDragging) {
+                    // Drag field
+                    e.preventDefault();
+                    const pos = getCanvasMousePos(touch);
+                    
+                    fields[selectedFieldIndex].x = pos.x - dragOffset.x;
+                    fields[selectedFieldIndex].y = pos.y - dragOffset.y;
+                    
+                    updateFieldForm();
+                    drawCanvas();
+                    markAsDirty();
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                lastTouchDistance = 0;
+            }
+            if (e.touches.length === 0) {
+                isDragging = false;
+                isResizing = false;
+            }
+        });
     });
 
     function markAsDirty() {
@@ -428,6 +651,19 @@
                         </div>
                         <div class="field-settings mt-2" id="fieldSettings${i}" style="display: ${settingsDisplay};" onclick="event.stopPropagation()">
                             <div class="row">
+                                <div class="col-12 mb-1">
+                                    <small>Font:</small>
+                                    <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'font_family', this.value)">
+                                        <option value="Arial" ${f.font_family==='Arial'?'selected':''}>Arial</option>
+                                        <option value="Times New Roman" ${f.font_family==='Times New Roman'?'selected':''}>Times New Roman</option>
+                                        <option value="Georgia" ${f.font_family==='Georgia'?'selected':''}>Georgia</option>
+                                        <option value="Verdana" ${f.font_family==='Verdana'?'selected':''}>Verdana</option>
+                                        <option value="Courier New" ${f.font_family==='Courier New'?'selected':''}>Courier New</option>
+                                        <option value="Tahoma" ${f.font_family==='Tahoma'?'selected':''}>Tahoma</option>
+                                        <option value="Trebuchet MS" ${f.font_family==='Trebuchet MS'?'selected':''}>Trebuchet MS</option>
+                                        <option value="Palatino Linotype" ${f.font_family==='Palatino Linotype'?'selected':''}>Palatino</option>
+                                    </select>
+                                </div>
                                 <div class="col-6">
                                     <small>Align:</small>
                                     <select class="form-control form-control-sm" onchange="updateFieldProp(${i}, 'text_align', this.value)">
@@ -460,6 +696,30 @@
                                     <small>Y:</small>
                                     <input type="number" class="form-control form-control-sm" value="${f.y}" onchange="updateFieldProp(${i}, 'y', this.value)">
                                 </div>
+                                <div class="col-12 mt-2 pt-2 border-top">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="border${i}" 
+                                                   ${f.has_border ? 'checked' : ''} 
+                                                   onchange="toggleBorder(${i}, this.checked)">
+                                            <label class="custom-control-label" for="border${i}"><small>Border</small></label>
+                                        </div>
+                                    </div>
+                                    <div class="row" id="borderOptions${i}" style="display: ${f.has_border ? 'flex' : 'none'};">
+                                        <div class="col-6">
+                                            <small>Warna:</small>
+                                            <input type="color" class="form-control form-control-sm" 
+                                                   value="${f.border_color || '#000000'}" 
+                                                   onchange="updateFieldProp(${i}, 'border_color', this.value)">
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Tebal (px):</small>
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   value="${f.border_width || 1}" min="1" max="10"
+                                                   onchange="updateFieldProp(${i}, 'border_width', this.value)">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -491,10 +751,20 @@
     }
 
     window.updateFieldProp = function(index, prop, value) {
-        if (prop === 'font_size' || prop === 'x' || prop === 'y') {
+        if (prop === 'font_size' || prop === 'x' || prop === 'y' || prop === 'border_width') {
             value = parseInt(value);
         }
         fields[index][prop] = value;
+        drawCanvas();
+        markAsDirty();
+    }
+
+    window.toggleBorder = function(index, checked) {
+        fields[index].has_border = checked;
+        var optionsEl = document.getElementById('borderOptions' + index);
+        if (optionsEl) {
+            optionsEl.style.display = checked ? 'flex' : 'none';
+        }
         drawCanvas();
         markAsDirty();
     }
@@ -659,10 +929,26 @@
             } else {
                 // Text Field
                 ctx.font = `${field.font_style === 'B' ? 'bold' : 'normal'} ${field.font_size}px ${field.font_family}`;
-                ctx.fillStyle = field.text_color;
                 ctx.textAlign = field.text_align === 'C' ? 'center' : (field.text_align === 'R' ? 'right' : 'left');
                 ctx.textBaseline = 'top';
-                ctx.fillText(field.sample, field.x, field.y);
+
+                // Draw text with stroke outline if enabled
+                if (field.has_border) {
+                    // Draw outline first (stroke)
+                    ctx.strokeStyle = field.border_color || '#000000';
+                    ctx.lineWidth = (field.border_width || 1) * 2;
+                    ctx.lineJoin = 'round';
+                    ctx.miterLimit = 2;
+                    ctx.strokeText(field.sample, field.x, field.y);
+                    
+                    // Then draw fill on top
+                    ctx.fillStyle = field.text_color;
+                    ctx.fillText(field.sample, field.x, field.y);
+                } else {
+                    // Normal text without outline
+                    ctx.fillStyle = field.text_color;
+                    ctx.fillText(field.sample, field.x, field.y);
+                }
 
                 if (isActive) {
                     var dims = getFieldDimensions(field);
@@ -678,6 +964,83 @@
             }
         });
     }
+
+    // ========== ZOOM AND PAN FUNCTIONS ==========
+    
+    function setZoom(level) {
+        zoomLevel = Math.max(0.25, Math.min(3.0, level));
+        applyTransform();
+        updateZoomIndicator();
+    }
+
+    function applyTransform() {
+        const wrapper = document.getElementById('canvasWrapper');
+        wrapper.style.transform = `scale(${zoomLevel})`;
+    }
+
+    function updateZoomIndicator() {
+        document.getElementById('zoomIndicator').textContent = Math.round(zoomLevel * 100) + '%';
+    }
+
+    function fitCanvasToViewport() {
+        const container = document.getElementById('canvasContainer');
+        const wrapper = document.getElementById('canvasWrapper');
+        
+        // Get container dimensions (available space)
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        // Get canvas actual dimensions
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        // Calculate zoom to fit (with minimal padding)
+        const padding = 20; // 10px padding on each side
+        const zoomX = (containerWidth - padding) / canvasWidth;
+        const zoomY = (containerHeight - padding) / canvasHeight;
+        
+        // Use the smaller zoom to ensure it fits in both dimensions
+        const fitZoom = Math.min(zoomX, zoomY, 1.0); // Max 1.0 (100%)
+        
+        // Apply the zoom
+        setZoom(fitZoom);
+    }
+
+    function centerCanvas() {
+        const container = document.getElementById('canvasContainer');
+        const wrapper = document.getElementById('canvasWrapper');
+        
+        // Get the dimensions
+        const containerWidth = container.clientWidth;
+        const wrapperWidth = wrapper.offsetWidth;
+        
+        // Calculate scroll position to center horizontally only
+        const scrollLeft = Math.max(0, (wrapperWidth - containerWidth) / 2);
+        
+        // Set scroll position - horizontal center, vertical top
+        container.scrollLeft = scrollLeft;
+        container.scrollTop = 0;
+    }
+
+    function getCanvasMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        return {
+            x: (e.clientX - rect.left) * scaleX / zoomLevel,
+            y: (e.clientY - rect.top) * scaleY / zoomLevel
+        };
+    }
+
+    function getTouchDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Zoom button handlers
+
 
 </script>
 <?= $this->endSection(); ?>

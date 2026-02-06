@@ -191,7 +191,7 @@ class Sertifikat extends BaseController
             if (!empty($fieldsData) && is_array($fieldsData)) {
                 $insertData = [];
                 foreach ($fieldsData as $field) {
-                    $insertData[] = [
+                $insertData[] = [
                         'template_id' => $templateId,
                         'field_name' => $field['name'],
                         'field_label' => $field['label'],
@@ -203,6 +203,11 @@ class Sertifikat extends BaseController
                         'text_align' => $field['text_align'] ?? 'L',
                         'text_color' => $field['text_color'] ?? '#000000',
                         'max_width' => (int) ($field['max_width'] ?? 0),
+                        'border_settings' => json_encode([
+                            'enabled' => !empty($field['has_border']),
+                            'color' => $field['border_color'] ?? '#000000',
+                            'width' => (int) ($field['border_width'] ?? 1)
+                        ])
                     ];
                 }
 
