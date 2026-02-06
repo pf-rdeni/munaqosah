@@ -294,11 +294,27 @@ class CetakSertifikat extends BaseController
                  // Let's rely on Global for now as per previous context "ambil yang gelobal".
                  // "penentuan rang A, B dan lainya melihat dari tabel predikat rang tertinggi adalah A dan mengikuti rang ke bawahnya, ambil yang gelobal" -> confirmed global.
                  
+                 // Debug logging
+                 log_message('debug', 'Calculating grade for ' . $m['nama_materi'] . ' | Score: ' . $materiSubtotal . ' | Predicates count: ' . count($globalPredikats));
+                 
                  foreach ($globalPredikats as $pred) {
+                    log_message('debug', 'Checking predicate: ' . ($pred['nama_predikat'] ?? 'N/A') . ' | Range: ' . $pred['min_nilai'] . '-' . $pred['max_nilai'] . ' | Letter: ' . ($pred['predikat_huruf'] ?? 'NULL'));
+                    
                     if ($materiSubtotal >= $pred['min_nilai'] && $materiSubtotal <= $pred['max_nilai']) {
-                        $gradeLetter = $pred['predikat_huruf'] ?? '-';
+                        // Use predikat_huruf if available, otherwise extract first letter from nama_predikat
+                        $gradeLetter = $pred['predikat_huruf'] ?? null;
+                        if (empty($gradeLetter) && !empty($pred['nama_predikat'])) {
+                            // Fallback: Extract first letter from nama_predikat
+                            $gradeLetter = strtoupper(substr($pred['nama_predikat'], 0, 1));
+                        }
+                        $gradeLetter = $gradeLetter ?: '-';
+                        log_message('debug', 'MATCHED! Grade letter: ' . $gradeLetter);
                         break;
                     }
+                 }
+                 
+                 if ($gradeLetter === '-') {
+                     log_message('debug', 'NO MATCH FOUND for score: ' . $materiSubtotal);
                  }
 
                  $scores[$m['nama_materi']] = [
@@ -477,7 +493,13 @@ class CetakSertifikat extends BaseController
                     $gradeLetter = '-';
                     foreach ($globalPredikats as $pred) {
                         if ($materiSubtotal >= $pred['min_nilai'] && $materiSubtotal <= $pred['max_nilai']) {
-                            $gradeLetter = $pred['predikat_huruf'] ?? '-';
+                            // Use predikat_huruf if available, otherwise extract first letter from nama_predikat
+                            $gradeLetter = $pred['predikat_huruf'] ?? null;
+                            if (empty($gradeLetter) && !empty($pred['nama_predikat'])) {
+                                // Fallback: Extract first letter from nama_predikat
+                                $gradeLetter = strtoupper(substr($pred['nama_predikat'], 0, 1));
+                            }
+                            $gradeLetter = $gradeLetter ?: '-';
                             break;
                         }
                     }
