@@ -72,6 +72,12 @@ abstract class BaseController extends Controller
         // Set data global untuk view
         $this->data['siteName'] = 'Munaqosah SDIT An-Nahl';
         $this->data['siteDescription'] = 'Sistem Penilaian Ujian Munaqosah';
+        
+        // Calculate real current academic year for UI badges
+        $bulan = (int)date('m');
+        $tahun = (int)date('Y');
+        $calcYear = ($bulan >= 7) ? $tahun : $tahun - 1;
+        $this->data['realCurrentYear'] = $calcYear . '/' . ($calcYear + 1);
     }
 
     /**
@@ -197,14 +203,41 @@ abstract class BaseController extends Controller
      */
     protected function getAvailableTahunAjaran(): array
     {
+        // 1. Calculate Standard Years (Current & Next)
         $bulan = (int)date('m');
         $tahun = (int)date('Y');
-        $currentYear = ($bulan >= 7) ? $tahun : $tahun - 1;
+        $calcCurrentYear = ($bulan >= 7) ? $tahun : $tahun - 1;
         
-        return [
-            'previous' => ($currentYear - 1) . '/' . $currentYear,
-            'current'  => $currentYear . '/' . ($currentYear + 1),
-            'next'     => ($currentYear + 1) . '/' . ($currentYear + 2),
+        $standardYears = [
+            $calcCurrentYear . '/' . ($calcCurrentYear + 1),
+            ($calcCurrentYear + 1) . '/' . ($calcCurrentYear + 2)
         ];
+
+        // 2. Fetch Years from Database
+        $siswaYears = $this->db->table('tbl_munaqosah_siswa')
+                               ->select('tahun_ajaran')
+                               ->distinct()
+                               ->get()
+                               ->getResultArray();
+                               
+        $pesertaYears = $this->db->table('tbl_munaqosah_peserta')
+                                 ->select('tahun_ajaran')
+                                 ->distinct()
+                                 ->get()
+                                 ->getResultArray();
+
+        // 3. Merge and Clean
+        $dbYears = array_merge(
+            array_column($siswaYears, 'tahun_ajaran'),
+            array_column($pesertaYears, 'tahun_ajaran')
+        );
+
+        // Filter out empty and merge with standard
+        $allYears = array_unique(array_filter(array_merge($standardYears, $dbYears)));
+        
+        // Sort DESC
+        rsort($allYears);
+
+        return $allYears;
     }
 }

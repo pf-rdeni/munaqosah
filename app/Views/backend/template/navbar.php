@@ -37,14 +37,18 @@
             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="tahunAjaranDropdown">
                 <h6 class="dropdown-header"><i class="fas fa-calendar-alt mr-2"></i>Tahun Ajaran</h6>
                 <?php 
-                $availableYears = $availableTahunAjaran ?? [
-                    'previous' => '2024/2025',
-                    'current' => '2025/2026',
-                    'next' => '2026/2027'
-                ];
-                $currentYear = $tahunAjaran ?? '2025/2026';
+                // Fallback jika variabel tidak dikirim dari controller
+                if (!isset($realCurrentYear)) {
+                    $b = (int)date('m');
+                    $t = (int)date('Y');
+                    $cY = ($b >= 7) ? $t : $t - 1;
+                    $realCurrentYear = $cY . '/' . ($cY + 1);
+                }
+
+                $availableYears = $availableTahunAjaran ?? [$realCurrentYear];
+                $currentYear = $tahunAjaran ?? $realCurrentYear;
                 ?>
-                <?php foreach ($availableYears as $key => $year): ?>
+                <?php foreach ($availableYears as $year): ?>
                     <?php $isSelected = ($year === $currentYear); ?>
                     <a class="dropdown-item tahun-ajaran-option <?= $isSelected ? 'active' : '' ?>" 
                        href="#" 
@@ -53,7 +57,7 @@
                             <i class="fas fa-check text-success mr-2"></i>
                         <?php endif; ?>
                         <?= $year ?>
-                        <?php if ($key === 'current'): ?>
+                        <?php if ($year === $realCurrentYear): ?>
                             <span class="badge badge-primary badge-sm ml-2">Saat Ini</span>
                         <?php endif; ?>
                     </a>

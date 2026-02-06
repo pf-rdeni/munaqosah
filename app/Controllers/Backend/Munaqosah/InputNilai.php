@@ -199,6 +199,7 @@ class InputNilai extends BaseController
         
         $otherGrade = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, j.nama_juri, j.id_grup_juri as other_grup_juri')
                                        ->where('no_peserta', $noPeserta)
+                                       ->where('tbl_munaqosah_nilai_ujian.tahun_ajaran', $tahunAjaran)
                                        ->where('tbl_munaqosah_nilai_ujian.id_grup_materi', $idGrupMateri)
                                        ->where('tbl_munaqosah_nilai_ujian.id_juri !=', $juri['id'])
                                        ->join('tbl_munaqosah_juri j', 'j.id = tbl_munaqosah_nilai_ujian.id_juri', 'left')
@@ -210,6 +211,7 @@ class InputNilai extends BaseController
         $scoresRaw = $this->nilaiModel->select('tbl_munaqosah_nilai_ujian.*, m.nilai_maksimal')
                                       ->join('tbl_munaqosah_materi_ujian m', 'm.id = tbl_munaqosah_nilai_ujian.id_materi', 'left')
                                       ->where('no_peserta', $noPeserta)
+                                      ->where('tbl_munaqosah_nilai_ujian.tahun_ajaran', $tahunAjaran)
                                       ->where('id_juri', $juri['id'])
                                       ->findAll();
         
