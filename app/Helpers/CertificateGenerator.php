@@ -168,7 +168,10 @@ class CertificateGenerator
                  $tableWidth = $template['width'] - ($tableLeft * 2);
                  if ($tableWidth < 200) $tableWidth = $template['width'] - 100; // Fallback
 
-                $html .= '<table class="score-table" style="position: absolute; top: ' . $tableTop . 'px; left: ' . $tableLeft . 'px; width: ' . $tableWidth . 'px; font-size: ' . $field['font_size'] . 'px;">
+                 // Get mapped font family
+                $fontFamily = $this->getFontMapping($field['font_family']);
+                
+                $html .= '<table class="score-table" style="position: absolute; top: ' . $tableTop . 'px; left: ' . $tableLeft . 'px; width: ' . $tableWidth . 'px; font-size: ' . $field['font_size'] . 'px; font-family: ' . $fontFamily . ';">
                     <thead>
                         <tr>
                             <th width="5%">No</th>
@@ -229,16 +232,18 @@ class CertificateGenerator
             $style .= "font-family: {$field['font_family']};";
             $style .= "font-size: {$field['font_size']}px;";
             $style .= "color: {$field['text_color']};";
+            $style .= "line-height: 1;"; // Match canvas line height
+            $style .= "margin: 0; padding: 0;"; // Remove default spacing
             
             if ($field['font_style'] == 'B') $style .= "font-weight: bold;";
             if ($field['font_style'] == 'I') $style .= "font-style: italic;";
             if ($field['font_style'] == 'U') $style .= "text-decoration: underline;";
 
-            // Alignment (Canvas centers text at X if align=C. CSS needs adjustment)
+            // Horizontal alignment only
             if ($field['text_align'] == 'C') {
                 $style .= "transform: translateX(-50%);"; 
             } elseif ($field['text_align'] == 'R') {
-                 $style .= "transform: translateX(-100%);";
+                $style .= "transform: translateX(-100%);";
             }
             
             $html .= "<div style=\"{$style}\">{$text}</div>";
@@ -426,8 +431,9 @@ class CertificateGenerator
                             ? json_decode($field['border_settings'], true) 
                             : $field['border_settings'];
                         
-                        if ($borderSettings) {
-                            $borderEnabled = $borderSettings['enabled'] ?? false;
+                        if ($borderSettings && is_array($borderSettings)) {
+                            // Strict boolean check - only true if explicitly set to true
+                            $borderEnabled = isset($borderSettings['enabled']) && $borderSettings['enabled'] === true;
                             $borderColor = $borderSettings['color'] ?? '#000000';
                             $borderWidth = (int)($borderSettings['width'] ?? 1);
                         }
@@ -518,39 +524,8 @@ class CertificateGenerator
         // Color
         $style[] = 'color: ' . $field['text_color'];
 
-        // Border / Stroke (Text Outline)
-        if (!empty($field['has_border']) && $field['has_border']) {
-            $borderWidth = (int)($field['border_width'] ?? 1);
-            $borderColor = $field['border_color'] ?? '#000000';
-            
-            // 1. Try standard/webkit stroke
-            $style[] = "-webkit-text-stroke: " . ($borderWidth) . "px " . $borderColor;
-            
-            // 2. Add text-shadow emulation (Backup for PDF engines that ignore stroke)
-            // Simulating stroke with multiple shadows
-            $shadows = [];
-            // Use 8 points for > 1px to ensure coverage
-            if ($borderWidth > 0) {
-                 $w = $borderWidth;
-                 // Cardinals
-                 $shadows[] = "$w" . "px 0 0 $borderColor";
-                 $shadows[] = "-$w" . "px 0 0 $borderColor";
-                 $shadows[] = "0 $w" . "px 0 $borderColor";
-                 $shadows[] = "0 -$w" . "px 0 $borderColor";
-                 
-                 // Diagonals for smoother look if width > 1
-                 if ($w > 1) {
-                     $d = number_format($w * 0.707, 1, '.', ''); // sin(45) approx
-                     $shadows[] = "$d" . "px $d" . "px 0 $borderColor";
-                     $shadows[] = "$d" . "px -$d" . "px 0 $borderColor";
-                     $shadows[] = "-$d" . "px $d" . "px 0 $borderColor";
-                     $shadows[] = "-$d" . "px -$d" . "px 0 $borderColor";
-                 }
-            }
-            if (!empty($shadows)) {
-                $style[] = "text-shadow: " . implode(', ', $shadows);
-            }
-        }
+        // Border / Stroke logic is now handled in buildHtml() using Layered approach for better PDF compatibility
+        // Legacy logic removed to prevent conflicts with stale data
         
         // Max width
         if ($field['max_width'] > 0) {

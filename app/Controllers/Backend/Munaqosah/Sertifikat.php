@@ -174,8 +174,10 @@ class Sertifikat extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Session expired']);
         }
 
-        $templateId = $this->request->getPost('template_id');
-        $fieldsData = $this->request->getPost('fields'); // Array of field configurations
+        // Read JSON body
+        $json = $this->request->getJSON(true); // true = return as array
+        $templateId = $json['template_id'] ?? null;
+        $fieldsData = $json['fields'] ?? null;
 
         if (!$templateId) {
             return $this->response->setJSON(['success' => false, 'message' => 'ID Template tidak valid']);
@@ -191,6 +193,11 @@ class Sertifikat extends BaseController
             if (!empty($fieldsData) && is_array($fieldsData)) {
                 $insertData = [];
                 foreach ($fieldsData as $field) {
+                    // Debug: Log border data
+                    log_message('debug', 'Field: ' . ($field['name'] ?? 'unknown') . 
+                        ' | has_border type: ' . gettype($field['has_border'] ?? null) . 
+                        ' | has_border value: ' . var_export($field['has_border'] ?? null, true));
+                    
                 $insertData[] = [
                         'template_id' => $templateId,
                         'field_name' => $field['name'],
@@ -204,7 +211,7 @@ class Sertifikat extends BaseController
                         'text_color' => $field['text_color'] ?? '#000000',
                         'max_width' => (int) ($field['max_width'] ?? 0),
                         'border_settings' => json_encode([
-                            'enabled' => !empty($field['has_border']),
+                            'enabled' => isset($field['has_border']) ? (bool)$field['has_border'] : false,
                             'color' => $field['border_color'] ?? '#000000',
                             'width' => (int) ($field['border_width'] ?? 1)
                         ])
@@ -245,13 +252,21 @@ class Sertifikat extends BaseController
         $dummyData = [
             'nama_peserta' => 'AHMAD FAUZI BIN ABDULLAH',
             'nomor_peserta' => '001/MUNA/2026',
+            'nisn' => '0012345678',
+            'nis' => '1001',
             'tempat_lahir' => 'Bandung',
             'tanggal_lahir' => '15 Januari 2015',
+            'jenis_kelamin' => 'Laki-laki',
+            'nama_ayah' => 'Abdullah bin Ahmad',
+            'alamat' => 'Jl. Merpati No. 10, Bandung',
             'nama_sekolah' => 'SDIT AN-NAHL',
             'predikat' => 'MUMTAZ',
+            'nilai_huruf' => 'A',
             'nilai_rata_rata' => '95.50',
-            'tanggal_terbit' => '04 Februari 2026',
+            'tanggal_terbit' => 'Bekasi, 04 Februari 2026',
             'nomor_sertifikat' => 'SERT/2026/001',
+            'kepala_sekolah' => 'Sri Maningsih, S.Pd',
+            'nip_kepala' => '198001012005011001',
             // Simple QR placeholder - in real app use Helper to generate QR image path
             'qr_code' => '', // Empty for now or path to dummy QR
             'foto_peserta' => '', // Empty

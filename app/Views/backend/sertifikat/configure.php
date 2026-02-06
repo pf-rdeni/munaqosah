@@ -178,6 +178,7 @@
                     borderSettings = typeof f.border_settings === 'string' 
                         ? JSON.parse(f.border_settings) 
                         : f.border_settings;
+                    console.log('Loaded border_settings for', f.field_name, ':', borderSettings);
                 } catch(e) {
                     console.error('Error parsing border_settings:', e);
                 }
@@ -255,17 +256,34 @@
             var btn = $(this);
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
 
+            // Debug: Log data yang akan dikirim
+            console.log('Saving fields:', fields);
+            console.log('Fields with border info:', fields.map(f => ({
+                name: f.name,
+                has_border: f.has_border,
+                has_border_type: typeof f.has_border,
+                border_color: f.border_color,
+                border_width: f.border_width
+            })));
+
             $.ajax({
                 url: '<?= base_url('backend/sertifikat/save-config') ?>',
                 type: 'POST',
-                data: {
+                contentType: 'application/json',
+                data: JSON.stringify({
                     template_id: $('#templateId').val(),
                     fields: fields
-                },
+                }),
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        Swal.fire('Berhasil', response.message, 'success');
+                        Swal.fire({
+                            title: 'Berhasil',
+                            text: response.message,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
                         hasUnsavedChanges = false;
                     } else {
                         Swal.fire('Gagal', response.message, 'error');
@@ -624,7 +642,12 @@
     // Helper to get matching sample text from dropdown
     function getSampleText(name, label) {
         var opt = $('#selectField option[value="' + name + '"]');
-        if (opt.length) return opt.data('sample');
+        if (opt.length) {
+            var sample = opt.data('sample');
+            console.log('getSampleText for', name, ':', sample);
+            return sample || label; // Return label if sample is empty
+        }
+        console.log('getSampleText for', name, ': option not found, using label');
         return label;
     }
 
