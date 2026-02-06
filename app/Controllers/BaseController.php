@@ -155,13 +155,56 @@ abstract class BaseController extends Controller
 
     /**
      * Get Tahun Ajaran Dynamic
+     * Checks session first, then calculates based on current date
      * 
      * @return string
      */
     protected function getTahunAjaran(): string
     {
+        // Check if user has manually selected a year
+        if ($this->session->has('selected_tahun_ajaran')) {
+            return $this->session->get('selected_tahun_ajaran');
+        }
+        
+        // Default: Calculate based on current date (July-June cycle)
         $bulan = (int)date('m');
         $tahun = (int)date('Y');
-        return ($bulan >= 7) ? $tahun . '/' . ($tahun + 1) : ($tahun - 1) . '/' . $tahun;
+        $currentYear = ($bulan >= 7) ? $tahun . '/' . ($tahun + 1) : ($tahun - 1) . '/' . $tahun;
+        
+        // Set in session for first time only
+        $this->session->set('selected_tahun_ajaran', $currentYear);
+        
+        return $currentYear;
+    }
+
+    /**
+     * Set Tahun Ajaran
+     * Allows user to manually select academic year
+     * 
+     * @param string $year Format: YYYY/YYYY
+     * @return void
+     */
+    protected function setTahunAjaran(string $year): void
+    {
+        $this->session->set('selected_tahun_ajaran', $year);
+    }
+
+    /**
+     * Get Available Tahun Ajaran Options
+     * Returns previous, current, and next academic years
+     * 
+     * @return array
+     */
+    protected function getAvailableTahunAjaran(): array
+    {
+        $bulan = (int)date('m');
+        $tahun = (int)date('Y');
+        $currentYear = ($bulan >= 7) ? $tahun : $tahun - 1;
+        
+        return [
+            'previous' => ($currentYear - 1) . '/' . $currentYear,
+            'current'  => $currentYear . '/' . ($currentYear + 1),
+            'next'     => ($currentYear + 1) . '/' . ($currentYear + 2),
+        ];
     }
 }

@@ -63,8 +63,8 @@ class MonitoringNilai extends BaseController
         // 2. PERSIAPAN DATA: PESERTA
         $pesertaList = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.jenis_kelamin')
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'inner')
-            ->where('tahun_ajaran', $tahunAjaran)
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'inner')
+            ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
             ->orderBy('no_peserta', 'ASC')
             ->findAll();
 
@@ -202,6 +202,8 @@ class MonitoringNilai extends BaseController
                 ['title' => 'Monitoring Nilai', 'url' => ''],
             ],
             'user'       => $this->getCurrentUser(),
+            'tahunAjaran'=> $tahunAjaran,
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
             'structure'  => $structure, // Materi & Kriteria
             'pesertaList'=> $pesertaList,
             'finalData'  => $finalData,

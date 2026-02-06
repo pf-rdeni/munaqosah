@@ -50,8 +50,9 @@ class Siswa extends BaseController
                 ['title' => 'Data Siswa', 'url' => ''],
             ],
             'user'       => $this->getCurrentUser(),
-            'user'       => $this->getCurrentUser(),
-            'siswaList'  => $this->processSiswaList($this->siswaModel->orderBy('nama_siswa', 'ASC')->findAll()),
+            'tahunAjaran'=> $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
+            'siswaList'  => $this->processSiswaList($this->siswaModel->getSiswaAktif($this->getTahunAjaran())),
             'daftarSurah'=> $this->alquranModel->getDaftarSurah(), // Fallback / List Unik
             'dataAlquran'=> $this->alquranModel->getAllSurahData(), // Full Data untuk JS Filtering
         ];
@@ -92,6 +93,8 @@ class Siswa extends BaseController
             ],
             'user'       => $this->getCurrentUser(),
             'siswa'      => $siswa,
+            'tahunAjaran'=> $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
         ];
 
         return view('backend/siswa/detail', $data);
@@ -113,6 +116,8 @@ class Siswa extends BaseController
             ],
             'user'       => $this->getCurrentUser(),
             'validation' => \Config\Services::validation(),
+            'tahunAjaran'=> $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
         ];
 
         return view('backend/siswa/create', $data);
@@ -131,7 +136,7 @@ class Siswa extends BaseController
 
         // Validasi
         $rules = [
-            'nisn'          => 'required|max_length[20]|is_unique[tbl_munaqosah_siswa.nisn]',
+            'nisn'          => 'required|max_length[20]',
             'nama_siswa'    => 'required|max_length[100]',
             'jenis_kelamin' => 'required|in_list[L,P]',
         ];
@@ -140,6 +145,16 @@ class Siswa extends BaseController
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
+        }
+
+        // Cek duplikat NISN pada tahun ajaran yang sama
+        $tahunAjaran = $this->getTahunAjaran();
+        $nisn = $this->request->getPost('nisn');
+        $exist = $this->siswaModel->where('nisn', $nisn)->where('tahun_ajaran', $tahunAjaran)->first();
+        if ($exist) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', "NISN {$nisn} sudah terdaftar pada tahun ajaran {$tahunAjaran}");
         }
 
         // Simpan data
@@ -154,6 +169,7 @@ class Siswa extends BaseController
             'nama_ibu'      => $this->cleanInput($this->request->getPost('nama_ibu')),
             'alamat'        => $this->cleanInput($this->request->getPost('alamat')),
             'no_hp'         => $this->request->getPost('no_hp'),
+            'tahun_ajaran'  => $this->getTahunAjaran(),
             'status'        => 'aktif',
         ];
 
@@ -249,13 +265,31 @@ class Siswa extends BaseController
         $rules = [
             'nama_siswa'    => 'required|max_length[100]',
             'jenis_kelamin' => 'required|in_list[L,P]',
-            'nis'           => 'permit_empty|is_unique[tbl_munaqosah_siswa.nis,id,{id}]',
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
+        }
+
+        // Cek NIS (Hanya jika diisi dan berbeda dengan yang lama)
+        // NIS unik per tahun ajaran
+        $tahunAjaran = $this->getTahunAjaran();
+        $nis = $this->request->getPost('nis');
+        if (!empty($nis)) {
+            $existingSiswa = $this->siswaModel->find($id);
+            if ($existingSiswa['nis'] !== $nis) {
+                 $duplicateNis = $this->siswaModel->where('nis', $nis)
+                                                 ->where('tahun_ajaran', $tahunAjaran)
+                                                 ->where('id !=', $id)
+                                                 ->first();
+                 if ($duplicateNis) {
+                     return redirect()->back()
+                        ->withInput()
+                        ->with('error', "NIS {$nis} sudah digunakan oleh siswa lain ({$duplicateNis['nama_siswa']}) pada tahun ajaran {$tahunAjaran}");
+                 }
+            }
         }
 
         // Ambil data siswa lama untuk cek NIS
@@ -409,7 +443,7 @@ class Siswa extends BaseController
             'order'  => $this->request->getGet('order'),
         ];
 
-        $result = $this->siswaModel->getDataForDatatables($request);
+        $result = $this->siswaModel->getDataForDatatables($request, $this->getTahunAjaran());
         $result['draw'] = $request['draw'];
 
         return $this->response->setJSON($result);
@@ -566,13 +600,14 @@ class Siswa extends BaseController
                             ];
                         }
 
-                    // Validasi Dasar (Duplikat NISN)
+                    // Validasi Dasar (Duplikat NISN pada tahun ajaran yang sama)
+                    $tahunAjaran = $this->getTahunAjaran();
                     if (empty($nisn)) {
                         $isValid = false;
                         $errorMsg = 'NISN Kosong';
-                    } elseif ($this->siswaModel->where('nisn', $nisn)->first()) {
+                    } elseif ($this->siswaModel->where('nisn', $nisn)->where('tahun_ajaran', $tahunAjaran)->first()) {
                         $isValid = false;
-                        $errorMsg = 'NISN Duplikat';
+                        $errorMsg = "NISN Duplikat pada TA {$tahunAjaran}";
                     }
 
                     $previewData[] = [
@@ -666,6 +701,7 @@ class Siswa extends BaseController
                         'nama_ibu'      => $this->cleanInput($row['H']),
                         'alamat'        => $this->cleanInput($row['I']),
                         'no_hp'         => $row['J'] ?? null,
+                        'tahun_ajaran'  => $this->getTahunAjaran(),
                         'status'        => 'aktif',
                     ];
                 } else {
@@ -680,6 +716,7 @@ class Siswa extends BaseController
                         'nama_ibu'      => $this->cleanInput($row['AE']),
                         'alamat'        => $this->cleanInput($row['J']),
                         'no_hp'         => $row['T'] ?? null,
+                        'tahun_ajaran'  => $this->getTahunAjaran(),
                         'status'        => 'aktif',
                     ];
                 }

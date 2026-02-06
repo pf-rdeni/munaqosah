@@ -58,6 +58,8 @@ class InputNilai extends BaseController
                 ['title' => 'Input Nilai', 'url' => ''],
             ],
             'user'       => $this->getCurrentUser(),
+            'tahunAjaran'=> $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
             'juri'       => $juri,
             'listDinilai' => $listDinilai
         ];

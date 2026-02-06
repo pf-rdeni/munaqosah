@@ -49,7 +49,7 @@ class PesertaModel extends Model
     {
         $builder = $this->db->table($this->table . ' p');
         $builder->select('p.*, s.nama_siswa, s.jenis_kelamin, s.tanggal_lahir, s.foto');
-        $builder->join('tbl_munaqosah_siswa s', 's.nisn = p.nisn', 'left');
+        $builder->join('tbl_munaqosah_siswa s', 's.nisn = p.nisn AND s.tahun_ajaran = p.tahun_ajaran', 'left');
 
         if ($id) {
             $builder->where('p.id', $id);
@@ -123,7 +123,7 @@ class PesertaModel extends Model
     public function getPesertaDetail($noPeserta, $tahunAjaran)
     {
         return $this->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.nisn, s.foto, s.hafalan')
-                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'left')
+                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'left')
                     ->where('tbl_munaqosah_peserta.no_peserta', $noPeserta)
                     ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
                     ->first();

@@ -60,8 +60,8 @@ class CetakSertifikat extends BaseController
         // 2. Get Peserta
         $pesertaList = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.nisn as real_nisn')
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'inner')
-            ->where('tahun_ajaran', $tahunAjaran)
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'inner')
+            ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
             ->orderBy('no_peserta', 'ASC')
             ->findAll();
 
@@ -178,6 +178,8 @@ class CetakSertifikat extends BaseController
             'title' => 'Cetak Sertifikat',
             'pageTitle' => 'Cetak Sertifikat Munaqosah',
             'user' => $this->getCurrentUser(),
+            'tahunAjaran' => $tahunAjaran,
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
             'materiList' => $allMateri,
             'pesertaList' => $pesertaList,
             'finalData' => $finalData,
@@ -194,7 +196,7 @@ class CetakSertifikat extends BaseController
         // 1. Get Peserta Data
         $peserta = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.*, s.nisn as real_nisn, tbl_munaqosah_peserta.id as id_peserta') // Select all student data
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'inner')
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'inner')
             ->where('tbl_munaqosah_peserta.id', $pesertaId)
             ->first();
 
@@ -414,8 +416,8 @@ class CetakSertifikat extends BaseController
         // Peserta
         $pesertaList = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.*, s.nisn as real_nisn, tbl_munaqosah_peserta.id as id_peserta')
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'inner')
-            ->where('tahun_ajaran', $tahunAjaran)
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'inner')
+            ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
             ->orderBy('no_peserta', 'ASC')
             ->findAll();
 

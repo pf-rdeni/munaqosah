@@ -28,6 +28,39 @@
             </a>
         </li>
         
+        <!-- Academic Year Selector -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="tahunAjaranDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Pilih Tahun Ajaran">
+                <i class="far fa-calendar-alt mr-1"></i>
+                <span id="currentTahunAjaran" class="d-none d-md-inline"><?= $tahunAjaran ?? '2025/2026' ?></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="tahunAjaranDropdown">
+                <h6 class="dropdown-header"><i class="fas fa-calendar-alt mr-2"></i>Tahun Ajaran</h6>
+                <?php 
+                $availableYears = $availableTahunAjaran ?? [
+                    'previous' => '2024/2025',
+                    'current' => '2025/2026',
+                    'next' => '2026/2027'
+                ];
+                $currentYear = $tahunAjaran ?? '2025/2026';
+                ?>
+                <?php foreach ($availableYears as $key => $year): ?>
+                    <?php $isSelected = ($year === $currentYear); ?>
+                    <a class="dropdown-item tahun-ajaran-option <?= $isSelected ? 'active' : '' ?>" 
+                       href="#" 
+                       data-year="<?= $year ?>">
+                        <?php if ($isSelected): ?>
+                            <i class="fas fa-check text-success mr-2"></i>
+                        <?php endif; ?>
+                        <?= $year ?>
+                        <?php if ($key === 'current'): ?>
+                            <span class="badge badge-primary badge-sm ml-2">Saat Ini</span>
+                        <?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </li>
+        
         <!-- User Dropdown Menu -->
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

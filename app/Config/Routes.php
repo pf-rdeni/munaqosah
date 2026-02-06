@@ -29,6 +29,9 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->get('dashboard', 'Munaqosah\Dashboard::index');
     $routes->get('index', 'Munaqosah\Dashboard::index'); // Fix 404 for backend/index
     
+    // Academic Year Switching
+    $routes->post('tahun-ajaran/switch', 'TahunAjaran::switch');
+    
     // Sertifikat Munaqosah
     $routes->group('sertifikat', ['namespace' => 'App\Controllers\Backend\Munaqosah'], function ($routes) {
         $routes->get('/', 'Sertifikat::index');

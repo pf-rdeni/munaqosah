@@ -43,6 +43,7 @@ class SiswaModel extends Model
         'no_hp',
         'hafalan',
         'foto',
+        'tahun_ajaran',
         'status',
     ];
 
@@ -53,8 +54,8 @@ class SiswaModel extends Model
 
     // Aturan validasi
     protected $validationRules = [
-        'nisn'       => 'required|max_length[20]|is_unique[tbl_munaqosah_siswa.nisn,id,{id}]',
-        'nis'        => 'permit_empty|max_length[20]|is_unique[tbl_munaqosah_siswa.nis,id,{id}]',
+        'nisn'       => 'required|max_length[20]',
+        'nis'        => 'permit_empty|max_length[20]',
         'nama_siswa' => 'required|max_length[100]',
         'jenis_kelamin' => 'required|in_list[L,P]',
     ];
@@ -94,11 +95,14 @@ class SiswaModel extends Model
      * 
      * @return array
      */
-    public function getSiswaAktif(): array
+    public function getSiswaAktif(string $tahunAjaran = null): array
     {
-        return $this->where('status', 'aktif')
-                    ->orderBy('nama_siswa', 'ASC')
-                    ->findAll();
+        $builder = $this->where('status', 'aktif');
+        if ($tahunAjaran) {
+            $builder->where('tahun_ajaran', $tahunAjaran);
+        }
+        return $builder->orderBy('nama_siswa', 'ASC')
+                       ->findAll();
     }
 
     /**
@@ -107,13 +111,20 @@ class SiswaModel extends Model
      * @param string $keyword
      * @return array
      */
-    public function searchSiswa(string $keyword): array
+    public function searchSiswa(string $keyword, string $tahunAjaran = null): array
     {
-        return $this->like('nama_siswa', $keyword)
-                    ->orLike('nisn', $keyword)
-                    ->orLike('nis', $keyword)
-                    ->orderBy('nama_siswa', 'ASC')
-                    ->findAll();
+        $builder = $this->groupStart()
+                        ->like('nama_siswa', $keyword)
+                        ->orLike('nisn', $keyword)
+                        ->orLike('nis', $keyword)
+                        ->groupEnd();
+        
+        if ($tahunAjaran) {
+            $builder->where('tahun_ajaran', $tahunAjaran);
+        }
+
+        return $builder->orderBy('nama_siswa', 'ASC')
+                       ->findAll();
     }
 
     /**
@@ -122,12 +133,16 @@ class SiswaModel extends Model
      * @param string|null $status
      * @return int
      */
-    public function countSiswaByStatus(?string $status = null): int
+    public function countSiswaByStatus(?string $status = null, string $tahunAjaran = null): int
     {
+        $builder = $this;
         if ($status) {
-            return $this->where('status', $status)->countAllResults();
+            $builder = $builder->where('status', $status);
         }
-        return $this->countAllResults();
+        if ($tahunAjaran) {
+            $builder = $builder->where('tahun_ajaran', $tahunAjaran);
+        }
+        return $builder->countAllResults();
     }
 
     /**
@@ -136,9 +151,13 @@ class SiswaModel extends Model
      * @param array $request Parameter dari DataTables
      * @return array
      */
-    public function getDataForDatatables(array $request): array
+    public function getDataForDatatables(array $request, string $tahunAjaran = null): array
     {
         $builder = $this->builder();
+
+        if ($tahunAjaran) {
+            $builder->where('tahun_ajaran', $tahunAjaran);
+        }
 
         // Search
         if (!empty($request['search']['value'])) {

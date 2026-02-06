@@ -65,13 +65,13 @@ class Dashboard extends BaseController
         
         // Gender Calculation
         $genderL = $this->pesertaModel->select('tbl_munaqosah_peserta.id')
-                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn')
+                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn AND tbl_munaqosah_siswa.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran')
                         ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
                         ->where('tbl_munaqosah_siswa.jenis_kelamin', 'L')
                         ->countAllResults();
 
         $genderP = $this->pesertaModel->select('tbl_munaqosah_peserta.id')
-                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn')
+                        ->join('tbl_munaqosah_siswa', 'tbl_munaqosah_siswa.nisn = tbl_munaqosah_peserta.nisn AND tbl_munaqosah_siswa.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran')
                         ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
                         ->where('tbl_munaqosah_siswa.jenis_kelamin', 'P')
                         ->countAllResults();
@@ -296,12 +296,14 @@ class Dashboard extends BaseController
                 ['title' => 'Dashboard', 'url' => ''],
             ],
             'user'         => $this->getCurrentUser(),
+            'tahunAjaran'  => $tahunAjaran,
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
             'listDinilai'  => $listDinilai,
             'rubrikData'   => $rubrikData, // Pass dynamic rubric
             'predikats'    => $predikats,  // Pass predikats
             'juriComparison' => $juriComparison ?? null, // Data Statistik Juri
             'statistik'    => [
-                'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif'),
+                'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif', $tahunAjaran),
                 'totalPeserta'    => $totalPeserta,
                 'pesertaDinilai'  => $pesertaDinilai, // Keep original for backwards compat or specific widget
                 'statSelesai'     => $statSelesai,

@@ -33,10 +33,11 @@ class Peserta extends BaseController
         $tahunAjaran = $this->getTahunAjaran();
         
         // Get statistics
-        $totalSiswaAktif = $this->siswaModel->where('status', 'aktif')->countAllResults();
+        $totalSiswaAktif = $this->siswaModel->where('status', 'aktif')->where('tahun_ajaran', $tahunAjaran)->countAllResults();
         
         // Count siswa with hafalan
         $siswaWithHafalan = $this->siswaModel->where('status', 'aktif')
+                                           ->where('tahun_ajaran', $tahunAjaran)
                                            ->where('hafalan !=', '')
                                            ->where('hafalan !=', null)
                                            ->countAllResults();
@@ -50,8 +51,8 @@ class Peserta extends BaseController
         // Get peserta list with siswa data
         $pesertaList = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.jenis_kelamin, s.foto, s.hafalan, s.no_hp')
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'left')
-            ->where('tahun_ajaran', $tahunAjaran)
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'left')
+            ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
             ->orderBy('no_peserta', 'ASC')
             ->findAll();
 
@@ -80,6 +81,7 @@ class Peserta extends BaseController
             ],
             'user'            => $this->getCurrentUser(),
             'tahunAjaran'     => $tahunAjaran,
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
             'totalSiswaAktif' => $totalSiswaAktif,
             'siswaWithHafalan'=> $siswaWithHafalan,
             'pesertaTerdaftar'=> $pesertaTerdaftar,
@@ -122,8 +124,9 @@ class Peserta extends BaseController
         $startSurah = $this->settingUndianModel->getSetting('surah_sholat_start', $tahunAjaran) ?? 78;
         $endSurah = $this->settingUndianModel->getSetting('surah_sholat_end', $tahunAjaran) ?? 114;
 
-        // 2. Get Available Students (Active + Hafalan)
+        // 2. Get Available Students (Active + Hafalan) in current academic year
         $allEligible = $this->siswaModel->where('status', 'aktif')
+                                     ->where('tahun_ajaran', $tahunAjaran)
                                      ->where('hafalan !=', '')
                                      ->where('hafalan !=', null)
                                      ->findAll();
@@ -331,8 +334,8 @@ class Peserta extends BaseController
         
         $builder = $this->pesertaModel
             ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.jenis_kelamin, s.foto, s.hafalan, s.no_hp')
-            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn', 'left')
-            ->where('tahun_ajaran', $tahunAjaran);
+            ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'left')
+            ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran);
 
         if ($nisn) {
             $builder->where('tbl_munaqosah_peserta.nisn', $nisn);

@@ -34,6 +34,8 @@ class Sertifikat extends BaseController
             'template_depan' => $templateDepan,
             'template_belakang' => $templateBelakang,
             'user' => $this->getCurrentUser(),
+            'tahunAjaran' => $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
         ];
 
         return view('backend/sertifikat/setting', $data);
@@ -160,6 +162,8 @@ class Sertifikat extends BaseController
             'available_fields' => $availableFields,
             'halaman' => $halaman,
             'user' => $this->getCurrentUser(),
+            'tahunAjaran' => $this->getTahunAjaran(),
+            'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
         ];
 
         return view('backend/sertifikat/configure', $data);

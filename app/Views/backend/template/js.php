@@ -30,9 +30,25 @@
 <!-- SweetAlert2 -->
 <script src="<?= base_url('template/backend/plugins/sweetalert2/sweetalert2.min.js') ?>"></script>
 
+<!-- Academic Year Selector -->
+<script src="<?= base_url('assets/js/tahun_ajaran_selector.js') ?>"></script>
+
 <!-- Custom Scripts -->
 <script>
+// Base URL for AJAX requests (ensure no trailing slash for easier joining)
+const baseUrl = '<?= rtrim(base_url(), '/') ?>';
+
 $(document).ready(function() {
+    // =================================================================
+    // LOADING OVERLAY
+    // =================================================================
+    // Hilangkan overlay segera setelah DOM siap
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+        setTimeout(function() {
+            $(loader).fadeOut('fast');
+        }, 300); 
+    }
     // =================================================================
     // DARK MODE TOGGLE
     // =================================================================
@@ -75,7 +91,7 @@ $(document).ready(function() {
     Swal.fire({
         icon: 'success',
         title: 'Berhasil!',
-        html: '<?= session()->getFlashdata('success') ?>',
+        html: `<?= esc(session()->getFlashdata('success'), 'js') ?>`,
         timer: 3000,
         showConfirmButton: false
     });
@@ -85,7 +101,7 @@ $(document).ready(function() {
     Swal.fire({
         icon: 'error',
         title: 'Error!',
-        text: '<?= session()->getFlashdata('error') ?>',
+        text: `<?= esc(session()->getFlashdata('error'), 'js') ?>`,
         timer: 5000,
         showConfirmButton: true
     });
@@ -95,7 +111,7 @@ $(document).ready(function() {
     Swal.fire({
         icon: 'warning',
         title: 'Perhatian!',
-        text: '<?= session()->getFlashdata('warning') ?>',
+        text: `<?= esc(session()->getFlashdata('warning'), 'js') ?>`,
         timer: 4000,
         showConfirmButton: true
     });
@@ -154,15 +170,10 @@ $(document).ready(function() {
         });
     }
     // =================================================================
-    // LOADING OVERLAY
+    // INITIALIZATION COMPLETE
     // =================================================================
-    // Hilangkan overlay saat halaman selesai dirender
-    const loader = document.getElementById('loadingOverlay');
-    if (loader) {
-        setTimeout(function() {
-            $(loader).fadeOut('slow');
-        }, 500); // Delay sedikit agar transisi halus
-    }
+    console.log('Backend initialized');
+
 
 });
 
