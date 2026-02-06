@@ -34,7 +34,8 @@ class PredikatModel extends Model
         }
 
         // 2. Fallback to Global (id_grup_materi IS NULL)
-        return $this->where('id_grup_materi', null)
+        return $this->whereNull('id_grup_materi')
+                    ->orWhere('id_grup_materi', '')
                     ->orderBy('urutan', 'ASC')
                     ->findAll();
     }
