@@ -49,7 +49,7 @@ class NilaiUjianModel extends Model
     {
         $builder = $this->db->table($this->table . ' n');
         $builder->select('n.*, s.nama_siswa, m.nama_materi, j.nama_juri');
-        $builder->join('tbl_munaqosah_siswa s', 's.nisn = n.nisn', 'left');
+        $builder->join('tbl_munaqosah_siswa s', 's.nisn = n.nisn AND s.tahun_ajaran = n.tahun_ajaran', 'left');
         $builder->join('tbl_munaqosah_materi_ujian m', 'm.id = n.id_materi', 'left');
         $builder->join('tbl_munaqosah_juri j', 'j.id_juri = n.id_juri', 'left');
 
@@ -142,7 +142,7 @@ class NilaiUjianModel extends Model
     {
         return $this->select('tbl_munaqosah_nilai_ujian.no_peserta, s.nama_siswa, s.nisn, MAX(tbl_munaqosah_nilai_ujian.created_at) as tgl_nilai, MAX(tbl_munaqosah_nilai_ujian.id_grup_materi) as id_grup_materi, MAX(a.waktu_mulai) as waktu_mulai, MAX(a.waktu_selesai) as waktu_selesai')
                     ->join('tbl_munaqosah_peserta p', 'p.no_peserta = tbl_munaqosah_nilai_ujian.no_peserta AND p.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran', 'left')
-                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_nilai_ujian.nisn', 'left')
+                    ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_nilai_ujian.nisn AND s.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran', 'left')
                     ->join('tbl_munaqosah_antrian a', 'a.no_peserta = tbl_munaqosah_nilai_ujian.no_peserta AND a.tahun_ajaran = tbl_munaqosah_nilai_ujian.tahun_ajaran AND a.id_grup_materi = tbl_munaqosah_nilai_ujian.id_grup_materi', 'left')
                     ->where('tbl_munaqosah_nilai_ujian.id_juri', $idJuri)
                     ->where('tbl_munaqosah_nilai_ujian.tahun_ajaran', $tahunAjaran)

@@ -30,7 +30,7 @@ class AntrianModel extends Model
         $builder->select('a.*, s.nama_siswa as NamaLengkap, s.jenis_kelamin as JenisKelamin, s.nama_siswa as NamaSiswa, s.foto as Foto, m.nama_grup_materi as NamaGrup');
         // Join ke tabel peserta (registrasi_uji di tpqSmart)
         $builder->join('tbl_munaqosah_peserta p', 'p.no_peserta = a.no_peserta AND p.tahun_ajaran = a.tahun_ajaran', 'left');
-        $builder->join('tbl_munaqosah_siswa s', 's.nisn = a.nisn', 'left');
+        $builder->join('tbl_munaqosah_siswa s', 's.nisn = a.nisn AND s.tahun_ajaran = a.tahun_ajaran', 'left');
         $builder->join('tbl_munaqosah_grup_materi m', 'm.id = a.id_grup_materi', 'left'); // Updated column name
         
         $builder->where('a.tahun_ajaran', $tahunAjaran);
@@ -135,15 +135,15 @@ class AntrianModel extends Model
             $roomId = $room['room_id'];
             
             // Find participant currently in this room (status = sedang_ujian or dipanggil)
-            $occupant = $this->where('tahun_ajaran', $tahunAjaran)
-                             ->where('id_grup_materi', $grupMateriId) // Updated
-                             ->where('id_grup_juri', $roomId) // Updated
+            $occupant = $this->where($this->table . '.tahun_ajaran', $tahunAjaran)
+                             ->where($this->table . '.id_grup_materi', $grupMateriId)
+                             ->where($this->table . '.id_grup_juri', $roomId)
                              ->groupStart()
-                                 ->where('status_antrian', 'sedang_ujian')
-                                 ->orWhere('status_antrian', 'dipanggil')
+                                 ->where($this->table . '.status_antrian', 'sedang_ujian')
+                                 ->orWhere($this->table . '.status_antrian', 'dipanggil')
                              ->groupEnd()
-                             ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_antrian.nisn', 'left')
-                             ->select('tbl_munaqosah_antrian.*, s.nama_siswa, s.foto')
+                             ->join('tbl_munaqosah_siswa s', 's.nisn = ' . $this->table . '.nisn', 'left')
+                             ->select($this->table . '.*, s.nama_siswa, s.foto')
                              ->first();
 
             $roomStatus[] = [
