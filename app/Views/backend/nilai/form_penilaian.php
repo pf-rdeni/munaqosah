@@ -26,6 +26,110 @@
         margin-left: 10px;
         font-size: 0.8em;
     }
+    
+    /* Mushaf Page Layout Styles */
+    .mushaf-page {
+        border: 3px solid #d4af37;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 20px;
+        background: linear-gradient(to bottom, #fefefe, #f9f7f0);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .mushaf-header {
+        text-align: center;
+        border-bottom: 2px solid #d4af37;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .mushaf-page-number {
+        display: inline-block;
+        background: linear-gradient(135deg, #d4af37, #f4e4a6);
+        color: #333;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1.1em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .mushaf-verses {
+        font-family: 'LPMQ', serif;
+        font-size: 1.8em;
+        line-height: 2.8;
+        text-align: justify;
+        direction: rtl;
+        padding: 15px;
+    }
+    
+    .mushaf-verses .ayah-marker {
+        display: inline-block;
+        background: #d4af37;
+        color: white;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        text-align: center;
+        font-size: 0.55em;
+        margin: 0 8px;
+        vertical-align: middle;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .highlight-surah-start {
+        background-color: #fff9c4; /* Subtle yellow highlight */
+        border-radius: 8px;
+        padding: 5px 0;
+        display: inline;
+        box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+    }
+
+    /* Dark Mode Support */
+    .dark-mode .mushaf-page {
+        background: linear-gradient(to bottom, #2c2c2c, #1a1a1a);
+        border-color: #b38f2d; /* Slightly muted gold */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        color: #e0e0e0;
+    }
+
+    .dark-mode .mushaf-header {
+        border-bottom-color: #b38f2d;
+    }
+
+    .dark-mode .mushaf-page-number {
+        background: linear-gradient(135deg, #b38f2d, #8a6d21);
+        color: #fff;
+    }
+
+    .dark-mode .quran-verse {
+        border-bottom-color: #444;
+    }
+
+    .dark-mode .verse-number {
+        border-color: #666;
+        color: #bbb;
+    }
+
+    .dark-mode .highlight-surah-start {
+        background-color: #4a4a00; /* Darker highlight for dark mode */
+        color: #fff;
+        box-shadow: 0 0 10px rgba(255, 255, 0, 0.2);
+    }
+
+    [id^="quran-container-"].dark-mode,
+    .dark-mode [id^="quran-container-"],
+    .dark-mode .bg-light {
+        background-color: #212529 !important;
+        border-color: #444 !important;
+    }
+
+    .dark-mode .table-hover tbody tr:hover {
+        background-color: rgba(255,255,255,.15) !important;
+    }
 </style>
 <div class="row">
     <div class="col-md-12">
@@ -102,15 +206,24 @@
                                             <button type="button" class="btn btn-outline-secondary btn-zoom-out" title="Perkecil Text">
                                                 <i class="fas fa-search-minus"></i>
                                             </button>
+                                            <button type="button" class="btn btn-outline-secondary disabled zoom-label" style="min-width: 60px; pointer-events: none; opacity: 1;">100%</button>
                                             <button type="button" class="btn btn-outline-secondary btn-zoom-in" title="Perbesar Text">
                                                 <i class="fas fa-search-plus"></i>
                                             </button>
                                         </div>
+                                        <select class="form-control form-control-sm d-inline-block mr-2 display-mode-select" style="width: auto;" data-container="#quran-container-<?= $item['key'] ?>">
+                                            <option value="per-ayat">Per Ayat</option>
+                                            <option value="per-halaman">Per Halaman</option>
+                                        </select>
                                         <button type="button" class="btn btn-sm btn-outline-info btn-view-ayat" 
                                                 data-surah="<?= $item['objek_id'] ?>" 
                                                 data-target="#quran-container-<?= $item['key'] ?>">
                                             <i class="fas fa-eye mr-1"></i> Lihat Ayat
                                         </button>
+                                        <div class="custom-control custom-checkbox d-inline-block ml-3">
+                                            <input type="checkbox" class="custom-control-input chk-auto-open" id="chk-auto-<?= $item['key'] ?>">
+                                            <label class="custom-control-label font-weight-normal text-muted" for="chk-auto-<?= $item['key'] ?>" style="cursor: pointer;">Auto Buka</label>
+                                        </div>
                                     </div>
                                     <?php endif; ?>
                                 </div>
@@ -121,6 +234,16 @@
                                         <i class="fas fa-spinner fa-spin mr-2"></i> Memuat Ayat...
                                     </div>
                                     <div class="ayat-content"></div>
+                                    <!-- Page Navigation (for Per Halaman mode) -->
+                                    <div class="page-navigation mt-3 text-center" style="display: none;">
+                                        <button type="button" class="btn btn-secondary btn-sm prev-page-btn" disabled>
+                                            <i class="fas fa-chevron-left"></i> Halaman Sebelumnya
+                                        </button>
+                                        <span class="mx-3 page-info font-weight-bold"></span>
+                                        <button type="button" class="btn btn-secondary btn-sm next-page-btn" disabled>
+                                            Halaman Selanjutnya <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <table class="table table-bordered table-hover">
@@ -260,22 +383,90 @@
     </div>
 </div>
 
+
 <script>
-    // Logic View Ayat
+    // Load saved display mode preference from localStorage
+    let savedDisplayMode = localStorage.getItem('quranDisplayMode') || 'per-ayat';
+    
+    // Apply saved preference to all dropdowns on page load
+    $(document).ready(function() {
+        $('.display-mode-select').val(savedDisplayMode);
+    });
+    
+    // Save display mode when changed
+    $('.display-mode-select').on('change', function() {
+        let selectedMode = $(this).val();
+        localStorage.setItem('quranDisplayMode', selectedMode);
+        
+        // Update all other dropdowns to match
+        $('.display-mode-select').val(selectedMode);
+        
+        // Clear the current display to force re-render with new mode
+        let containerId = $(this).data('container');
+        if (containerId) {
+            let container = $(containerId);
+            container.data('current-mode', null); // Reset mode to force re-render
+            container.find('.ayat-content').empty();
+        }
+    });
+    
+    // Logic View Ayat with Display Mode Support
+    // Auto Open Logic
+    const AUTO_OPEN_KEY = 'autoOpenAyat';
+    let isAutoOpen = localStorage.getItem(AUTO_OPEN_KEY) === 'true';
+
+    // Initialize checkboxes
+    $('.chk-auto-open').prop('checked', isAutoOpen);
+
+    // Toggle listener
+    $('.chk-auto-open').change(function() {
+        isAutoOpen = $(this).is(':checked');
+        localStorage.setItem(AUTO_OPEN_KEY, isAutoOpen);
+        $('.chk-auto-open').prop('checked', isAutoOpen); // sync all checkboxes
+    });
+
+    // Helper to auto-open if enabled
+    function triggerAutoOpen(targetContainer) {
+        if (isAutoOpen) {
+            let container = $(targetContainer);
+            if (container.hasClass('collapse') && !container.hasClass('show')) {
+                container.closest('.tab-pane').find('.btn-view-ayat').trigger('click');
+            }
+        }
+    }
+
+    // Trigger on page load for active tab
+    setTimeout(() => {
+        triggerAutoOpen('.tab-pane.active [id^="quran-container-"]');
+    }, 500);
+
+    // Trigger on tab switch
+    $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+        let target = $(e.target).attr("href"); // newly activated tab
+        triggerAutoOpen(target + ' [id^="quran-container-"]');
+    });
+
     $('.btn-view-ayat').click(function() {
         let surahId = $(this).data('surah');
         let targetId = $(this).data('target');
         let container = $(targetId);
         let contentDiv = container.find('.ayat-content');
         let loadingDiv = container.find('.loading-ayat');
+        
+        // Get display mode from localStorage (global setting)
+        let displayMode = localStorage.getItem('quranDisplayMode') || 'per-ayat';
 
         // Toggle visibilitas
         container.collapse('toggle');
         
-        // Jika kosong, ambil data
-        if (contentDiv.is(':empty')) {
+        // Jika kosong atau mode berubah, ambil data
+        let currentMode = container.data('current-mode');
+        if (contentDiv.is(':empty') || currentMode !== displayMode) {
             loadingDiv.show();
             contentDiv.hide();
+            
+            // Store current mode
+            container.data('current-mode', displayMode);
             
             $.ajax({
                 url: '<?= base_url("assets/quran/json/") ?>' + surahId + '.json',
@@ -283,21 +474,10 @@
                 success: function(res) {
                     loadingDiv.hide();
                     if(res && res[surahId]) {
-                        let html = '';
-                        let verses = res[surahId].text; 
-                        
-                        if(verses) {
-                             $.each(verses, function(ayatNo, ayatText) {
-                                 html += `<div class="quran-verse">
-                                    <div class="d-flex justify-content-between">
-                                        <div class="verse-number">${ayatNo}</div>
-                                        <div class="text-arab w-100" style="font-size: ${currentFontSize}em;">${ayatText}</div>
-                                    </div>
-                                 </div>`;
-                             });
-                             contentDiv.html(html).show();
-                             // Apply font size globally just in case
-                             applyFontSize();
+                        if (displayMode === 'per-halaman') {
+                            renderPerHalaman(res, surahId, contentDiv);
+                        } else {
+                            renderPerAyat(res, surahId, contentDiv);
                         }
                     } else {
                         contentDiv.html('<div class="text-danger text-center">Gagal memuat ayat. Struktur data tidak dikenali.</div>').show();
@@ -310,6 +490,308 @@
             });
         }
     });
+    
+    // Helper to convert number to Arabic
+    function quranNumberToArabic(number) {
+        let arabic = "";
+        let numberString = number.toString();
+        for (let i = 0; i < numberString.length; i++) {
+            arabic += String.fromCharCode(numberString.charCodeAt(i) + 1584);
+        }
+        return arabic;
+    }
+
+    // Render Per Ayat (Original Mode - One verse per line)
+    function renderPerAyat(res, surahId, contentDiv) {
+        // Hide page navigation in Per Ayat mode
+        let container = contentDiv.closest('[id^="quran-container-"]');
+        container.find('.page-navigation').hide();
+        
+        let html = '';
+        let verses = res[surahId].text;
+        
+        if(verses) {
+            $.each(verses, function(ayatNo, ayatText) {
+                html += `<div class="quran-verse">
+                    <div class="d-flex justify-content-between">
+                        <div class="verse-number">${quranNumberToArabic(ayatNo)}</div>
+                        <div class="text-arab w-100" style="font-size: ${currentFontSize}em;">${ayatText}</div>
+                    </div>
+                </div>`;
+            });
+            contentDiv.html(html).show();
+            applyFontSize();
+        }
+    }
+    
+    // Render Per Halaman (Mushaf Layout Mode - Using Real Page Mapping)
+    let mushafPagesData = null; // Cache for page mapping data
+    
+    function renderPerHalaman(res, surahId, contentDiv) {
+        // Load mushaf page mapping if not already loaded
+        if (!mushafPagesData) {
+            $.ajax({
+                url: '<?= base_url("assets/quran/mushaf_pages_complete.json") ?>?v=<?= time() ?>',
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    mushafPagesData = data;
+                }
+            });
+        }
+        
+        // Find which page contains this surah
+        let pageNumber = findPageBySurah(parseInt(surahId));
+        
+        if (!pageNumber || !mushafPagesData[pageNumber]) {
+            contentDiv.html('<div class="text-danger text-center">Halaman untuk surah ini belum tersedia dalam mapping.</div>').show();
+            return;
+        }
+        
+        let pageData = mushafPagesData[pageNumber];
+        
+        // Build mushaf layout
+        let html = '<div class="mushaf-page">';
+        
+        // Header with page number and Juz
+        html += '<div class="mushaf-header">';
+        html += `<div class="mushaf-page-number">صَفْحَة ${pageNumber} | Halaman ${pageNumber}</div>`;
+        html += `<div class="mt-2"><strong>Juz ${pageData.juz}</strong></div>`;
+        html += '</div>';
+        
+        // Verses in mushaf format (flowing text with ayah markers)
+        html += '<div class="mushaf-verses" style="font-size: ' + currentFontSize + 'em;">';
+        
+        // Process each verse range on this page
+        let isFirstSurahOnPage = true;
+        for (let verseRange of pageData.verses) {
+            let surahNum = verseRange.surah;
+            let fromAyah = verseRange.from;
+            let toAyah = verseRange.to;
+            
+            // Load surah data
+            let surahData = null;
+            $.ajax({
+                url: '<?= base_url("assets/quran/json/") ?>' + surahNum + '.json',
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    surahData = data;
+                }
+            });
+            
+            if (!surahData || !surahData[surahNum]) continue;
+            
+            // Add Bismillah if this is the start of a new surah (ayah 1) and not Surah 9
+            if (fromAyah === 1 && surahNum !== 9 && surahNum !== 1) {
+                html += '<div class="text-center mb-3" style="font-size: 1.1em;">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>';
+            }
+            
+            // Add surah name if starting new surah mid-page
+            if (fromAyah === 1 && !isFirstSurahOnPage) {
+                let surahName = surahData[surahNum].name_latin || surahData[surahNum].name || 'Surah ' + surahNum;
+                html += `<div class="text-center my-2" style="font-size: 0.9em; color: #666;">( ${surahName} )</div>`;
+            }
+            
+            // Add verses from this range
+            let verses = surahData[surahNum].text;
+            for (let ayahNum = fromAyah; ayahNum <= toAyah; ayahNum++) {
+                if (verses[ayahNum]) {
+                    // Highlight ONLY the first verse of the target surah on this page
+                    let isFirstVerseOfTarget = (surahNum === parseInt(surahId) && ayahNum === fromAyah);
+                    
+                    if (isFirstVerseOfTarget) {
+                        html += '<span id="target-surah-start-' + surahId + '" class="highlight-surah-start">';
+                    }
+                    
+                    html += verses[ayahNum] + ' <span class="ayah-marker">' + quranNumberToArabic(ayahNum) + '</span> ';
+                    
+                    if (isFirstVerseOfTarget) {
+                        html += '</span>';
+                    }
+                }
+            }
+            
+            isFirstSurahOnPage = false;
+        }
+        
+        html += '</div>'; // Close mushaf-verses
+        html += '</div>'; // Close mushaf-page
+        
+        contentDiv.html(html).show();
+        
+        // Show page navigation and update buttons
+        let container = contentDiv.closest('#quran-container-' + contentDiv.closest('[id^="quran-container-"]').attr('id').split('-').pop());
+        let navDiv = container.find('.page-navigation');
+        let prevBtn = navDiv.find('.prev-page-btn');
+        let nextBtn = navDiv.find('.next-page-btn');
+        let pageInfo = navDiv.find('.page-info');
+        
+        navDiv.show();
+        pageInfo.text('Halaman ' + pageNumber);
+        
+        // Enable/disable buttons based on available pages
+        prevBtn.prop('disabled', pageNumber <= 582);
+        nextBtn.prop('disabled', pageNumber >= 604);
+        
+        // Store current page number
+        container.data('current-page', pageNumber);
+        container.data('current-surah', surahId);
+        
+        // Remove old click handlers and add new ones
+        prevBtn.off('click').on('click', function() {
+            if (pageNumber > 582) {
+                renderPageByNumber(pageNumber - 1, contentDiv);
+                // Scroll to bottom when going to previous page
+                setTimeout(function() {
+                    container[0].scrollTop = container[0].scrollHeight;
+                }, 100);
+            }
+        });
+        
+        nextBtn.off('click').on('click', function() {
+            if (pageNumber < 604) {
+                renderPageByNumber(pageNumber + 1, contentDiv);
+                // Scroll to top when going to next page
+                setTimeout(function() {
+                    container[0].scrollTop = 0;
+                }, 100);
+            }
+        });
+
+        // Auto-scroll to target surah
+        setTimeout(function() {
+            let targetEl = contentDiv.find('#target-surah-start-' + surahId);
+            if (targetEl.length) {
+                // Calculate precise offset relative to container
+                let offset = targetEl.offset().top - container.offset().top;
+                // Scroll container so target is at the very top (with small 5px padding)
+                container.animate({ scrollTop: container.scrollTop() + offset - 5 }, 500);
+            }
+        }, 300);
+
+        applyFontSize();
+    }
+    
+    // New function to render a specific page number
+    function renderPageByNumber(pageNum, contentDiv) {
+        if (!mushafPagesData || !mushafPagesData[pageNum]) {
+            contentDiv.html('<div class="text-danger text-center">Halaman ' + pageNum + ' tidak tersedia.</div>').show();
+            return;
+        }
+        
+        let pageData = mushafPagesData[pageNum];
+        
+        // Build mushaf layout (similar to renderPerHalaman, but for a specific page)
+        let html = '<div class="mushaf-page">';
+        
+        // Header with page number and Juz
+        html += '<div class="mushaf-header">';
+        html += `<div class="mushaf-page-number">صَفْحَة ${pageNum} | Halaman ${pageNum}</div>`;
+        html += `<div class="mt-2"><strong>Juz ${pageData.juz}</strong></div>`;
+        html += '</div>';
+        
+        // Verses in mushaf format (flowing text with ayah markers)
+        html += '<div class="mushaf-verses" style="font-size: ' + currentFontSize + 'em;">';
+        
+        // Process each verse range on this page
+        let isFirstSurahOnPage = true;
+        for (let verseRange of pageData.verses) {
+            let surahNum = verseRange.surah;
+            let fromAyah = verseRange.from;
+            let toAyah = verseRange.to;
+            
+            // Load surah data
+            let surahData = null;
+            $.ajax({
+                url: '<?= base_url("assets/quran/json/") ?>' + surahNum + '.json',
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    surahData = data;
+                }
+            });
+            
+            if (!surahData || !surahData[surahNum]) continue;
+            
+            // Add Bismillah if this is the start of a new surah (ayah 1) and not Surah 9
+            if (fromAyah === 1 && surahNum !== 9 && surahNum !== 1) {
+                html += '<div class="text-center mb-3" style="font-size: 1.1em;">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>';
+            }
+            
+            // Add surah name if starting new surah mid-page
+            if (fromAyah === 1 && !isFirstSurahOnPage) {
+                let surahName = surahData[surahNum].name_latin || surahData[surahNum].name || 'Surah ' + surahNum;
+                html += `<div class="text-center my-2" style="font-size: 0.9em; color: #666;">( ${surahName} )</div>`;
+            }
+            
+            // Add verses from this range
+            let verses = surahData[surahNum].text;
+            for (let ayahNum = fromAyah; ayahNum <= toAyah; ayahNum++) {
+                if (verses[ayahNum]) {
+                    html += verses[ayahNum] + ' <span class="ayah-marker">' + quranNumberToArabic(ayahNum) + '</span> ';
+                }
+            }
+            
+            isFirstSurahOnPage = false;
+        }
+        
+        html += '</div>'; // Close mushaf-verses
+        html += '</div>'; // Close mushaf-page
+        
+        contentDiv.html(html).show();
+        
+        // Update page navigation buttons
+        let container = contentDiv.closest('#quran-container-' + contentDiv.closest('[id^="quran-container-"]').attr('id').split('-').pop());
+        let navDiv = container.find('.page-navigation');
+        let prevBtn = navDiv.find('.prev-page-btn');
+        let nextBtn = navDiv.find('.next-page-btn');
+        let pageInfo = navDiv.find('.page-info');
+        
+        pageInfo.text('Halaman ' + pageNum);
+        prevBtn.prop('disabled', pageNum <= 582);
+        nextBtn.prop('disabled', pageNum >= 604);
+        
+        container.data('current-page', pageNum);
+        
+        // Re-attach click handlers for new pageNum
+        prevBtn.off('click').on('click', function() {
+            if (pageNum > 582) {
+                renderPageByNumber(pageNum - 1, contentDiv);
+                // Scroll to bottom when going to previous page
+                setTimeout(function() {
+                    container[0].scrollTop = container[0].scrollHeight;
+                }, 100);
+            }
+        });
+        
+        nextBtn.off('click').on('click', function() {
+            if (pageNum < 604) {
+                renderPageByNumber(pageNum + 1, contentDiv);
+                // Scroll to top when going to next page
+                setTimeout(function() {
+                    container[0].scrollTop = 0;
+                }, 100);
+            }
+        });
+        
+        applyFontSize();
+    }
+    
+    // Find which page contains a given surah (first occurrence)
+    function findPageBySurah(surahNumber) {
+        if (!mushafPagesData) return null;
+        
+        for (let pageNum in mushafPagesData) {
+            let pageData = mushafPagesData[pageNum];
+            for (let verseRange of pageData.verses) {
+                if (verseRange.surah === surahNumber) {
+                    return parseInt(pageNum);
+                }
+            }
+        }
+        return null; // Surah not found in mapping
+    }
 
     // Zoom Logic
     // Default size
@@ -318,9 +800,17 @@
     // Apply saved size immediately to styled elements (if any exist static) or dynamic ones
     function applyFontSize() {
         $('.text-arab').css('font-size', currentFontSize + 'em');
+        $('.mushaf-verses').css('font-size', currentFontSize + 'em');
+        
+        // Update percentage label (base 1.0 = 100%)
+        let percentage = Math.round(currentFontSize * 100);
+        $('.zoom-label').text(percentage + '%');
+        
         // Save to local storage
         localStorage.setItem('quranFontSize', currentFontSize);
     }
+
+    applyFontSize(); // Initialize labels on load
 
     $('.btn-zoom-in').click(function() {
         currentFontSize += 0.2;

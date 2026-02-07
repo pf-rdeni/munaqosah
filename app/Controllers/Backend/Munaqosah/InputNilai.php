@@ -561,4 +561,96 @@ class InputNilai extends BaseController
             'hasPeserta' => false
         ]);
     }
+
+    /**
+     * Get Quran surah list for dropdown
+     */
+    public function getQuranSurahList()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        try {
+            $surahList = \App\Helpers\QuranHelper::getSurahList();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $surahList
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading surah list: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get Quran verses by surah and ayah range
+     */
+    public function getQuranVerses()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $surahNumber = (int)$this->request->getPost('surah_number');
+        $fromAyah = (int)$this->request->getPost('from_ayah');
+        $toAyah = (int)$this->request->getPost('to_ayah');
+
+        if (!$surahNumber || !$fromAyah) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Surah number and ayah range required'
+            ]);
+        }
+
+        try {
+            $verses = \App\Helpers\QuranHelper::getVerses($surahNumber, $fromAyah, $toAyah);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $verses
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading verses: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get Quran verses by Mushaf page number
+     */
+    public function getQuranVersesByPage()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $pageNumber = (int)$this->request->getPost('page_number');
+
+        if (!$pageNumber || $pageNumber < 1 || $pageNumber > 604) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Valid page number (1-604) required'
+            ]);
+        }
+
+        try {
+            $verses = \App\Helpers\QuranHelper::getVersesByPage($pageNumber);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $verses
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error loading page: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
