@@ -32,7 +32,7 @@ class JuriModel extends Model
      */
     public function getJuriWithMateri()
     {
-        return $this->select('tbl_munaqosah_juri.*, gm.nama_grup_materi, u.username, u.email')
+        return $this->select('tbl_munaqosah_juri.*, gm.nama_grup_materi, u.username, u.email, u.user_image')
                     ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_juri.id_grup_materi', 'left')
                     ->join('users u', 'u.id = tbl_munaqosah_juri.user_id', 'left')
                     ->findAll();

@@ -28,6 +28,7 @@
                     <thead>
                         <tr>
                             <th width="5%">No</th>
+                            <th width="8%">Foto</th>
                             <th>Nama Juri</th>
                             <th>Grup Juri</th>
                             <th>Materi & Kriteria</th>
@@ -38,6 +39,59 @@
                         <?php $no = 1; foreach ($juriList as $juri): ?>
                             <tr>
                                 <td class="text-center"><?= $no++ ?></td>
+                                <td class="text-center">
+                                    <?php 
+                                        // LOGIC AVATAR
+                                        // 1. Check if user_image exists
+                                        if (!empty($juri['user_image']) && file_exists(FCPATH . $juri['user_image'])) {
+                                            $fotoUrl = base_url($juri['user_image']);
+                                        } else {
+                                            // 2. Generate Avatar Code
+                                            // Prefer id_juri if available (e.g., JPS01, TT01)
+                                            $avatarCode = $juri['id_juri'] ?? '';
+                                            
+                                            if (empty($avatarCode)) {
+                                                // Fallback: Initials from Nama Grup Materi + Number from Username
+                                                $grupName = $juri['nama_grup_materi'] ?? '';
+                                                $words = explode(' ', $grupName);
+                                                $initials = '';
+                                                foreach($words as $w) {
+                                                    $initials .= strtoupper(substr($w, 0, 1));
+                                                }
+                                                
+                                                // Rule: Single letter -> Double it (T -> TT)
+                                                if (strlen($initials) === 1) {
+                                                    $initials .= $initials;
+                                                }
+
+                                                // Number from Username (last part)
+                                                // username format: juri_tahfidz_1
+                                                $parts = explode('_', $juri['username']);
+                                                $number = end($parts);
+                                                if (!is_numeric($number)) $number = '';
+
+                                                $avatarCode = $initials . $number;
+                                            }
+
+                                            // Ensure length is sufficient for 3-4 chars
+                                            $length = strlen($avatarCode);
+                                            if ($length < 2) $length = 2; // Min length
+
+                                            $fotoUrl = 'https://ui-avatars.com/api/?name=' . urlencode($avatarCode) . '&background=random&size=200&length=' . $length . '&font-size=0.35';
+                                        }
+
+                                        $fotoUrlLarge = $fotoUrl; // For modal view
+                                    ?>
+                                    <img src="<?= $fotoUrl ?>" 
+                                         alt="Foto" 
+                                         class="img-rounded img-circle" 
+                                         style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;" 
+                                         data-id="<?= $juri['id'] ?>"
+                                         data-nama="<?= esc($juri['nama_juri']) ?>"
+                                         data-foto="<?= $fotoUrlLarge ?>"
+                                         ondblclick="openViewPhotoModal(this)"
+                                         title="Double-klik untuk edit foto">
+                                </td>
                                 <td>
                                     <strong><?= esc($juri['nama_juri']) ?></strong><br>
                                     <code class="text-muted"><?= esc($juri['username']) ?></code>
@@ -204,14 +258,144 @@
     </div>
 </div>
 
+<!-- Modal View Photo Profil -->
+<div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog" aria-labelledby="modalViewPhotoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalViewPhotoLabel">
+                    <i class="fas fa-image"></i> Foto Profil Juri
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <h6 id="viewPhotoNamaJuri" class="mb-3"></h6>
+                    <img id="viewPhotoImage" src="" alt="Foto Profil"
+                        class="img-thumbnail mx-auto d-block"
+                        style="max-width: 100%; max-width: 300px; height: auto; min-height: 400px; object-fit: cover;">
+                    <input type="hidden" id="viewPhotoIdJuri" value="">
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button type="button" class="btn btn-warning" id="btnEditPhotoFromView">
+                    <i class="fas fa-edit"></i> Edit Foto
+                </button>
+                <button type="button" class="btn btn-primary" id="btnUploadNewPhoto">
+                    <i class="fas fa-upload"></i> Upload Foto Baru
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crop Photo Profil -->
+<div class="modal fade" id="modalCropPhoto" tabindex="-1" role="dialog" aria-labelledby="modalCropPhotoLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCropPhotoLabel">
+                    <i class="fas fa-crop"></i> Crop Foto Profil Juri
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading mb-2" style="cursor: pointer;" data-toggle="collapse" data-target="#petunjukCrop" aria-expanded="false" aria-controls="petunjukCrop">
+                        <i class="fas fa-info-circle"></i> Petunjuk Crop Foto Profil 
+                        <i class="fas fa-chevron-down float-right"></i>
+                    </h6>
+                    <div class="collapse" id="petunjukCrop">
+                        <ul class="mb-0">
+                            <li><strong>Geser dan sesuaikan posisi foto</strong> dengan mengklik dan menyeret area crop</li>
+                            <li><strong>Zoom in/out</strong> dengan menggunakan scroll mouse atau tombol zoom</li>
+                            <li><strong>Rasio foto 3:4</strong> - Pastikan wajah berada di tengah dan terlihat jelas</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="img-container-crop" style="height: 350px; background-color: #f4f4f4;">
+                            <img id="imageToCrop" src="" alt="Foto untuk di-crop" style="max-width: 100%; display: block;">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12 text-center">
+                        <div class="btn-group" role="group" aria-label="Kontrol Crop">
+                            <button type="button" class="btn btn-outline-primary" id="btnZoomIn" title="Zoom In">
+                                <i class="fas fa-search-plus"></i> Zoom In
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="btnZoomOut" title="Zoom Out">
+                                <i class="fas fa-search-minus"></i> Zoom Out
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="btnMove" title="Geser Foto">
+                                <i class="fas fa-arrows-alt"></i> Geser
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnReset" title="Reset">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="cropPhotoIdJuri" value="">
+                <input type="file" id="inputPhotoUpload" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Batal
+                </button>
+                <button type="button" class="btn btn-primary" id="btnSaveCroppedPhoto">
+                    <i class="fas fa-check"></i> Simpan Foto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cropper CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+    .img-container-crop {
+        width: 100%;
+        height: 350px;
+        max-height: 350px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .img-container-crop > img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    #modalCropPhoto .modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+</style>
+
 <?= $this->endSection(); ?>
 
 <?= $this->section('scripts'); ?>
+<!-- Cropper JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
 <script>
     $(document).ready(function() {
         $('#tabelJuri').DataTable({
             responsive: true,
             autoWidth: false,
+            columnDefs: [
+                { orderable: false, targets: [1, 5] } 
+            ]
         });
 
         // ==================== GRUP JURI LOGIC ====================
@@ -420,6 +604,163 @@
             error: function() {
                 Swal.fire('Error', 'Terjadi kesalahan', 'error');
                 btn.prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+            }
+        });
+    });
+
+    // =================== PHOTO VIEW/EDIT MODAL LOGIC ===================
+    var cropperInstance = null;
+    var currentPhotoIdJuri = null;
+
+    // Open View Photo Modal (double-click on photo)
+    function openViewPhotoModal(imgElement) {
+        var id = $(imgElement).data('id');
+        var nama = $(imgElement).data('nama');
+        var foto = $(imgElement).data('foto');
+        
+        currentPhotoIdJuri = id;
+        $('#viewPhotoIdJuri').val(id);
+        $('#viewPhotoNamaJuri').text(nama);
+        $('#viewPhotoImage').attr('src', foto);
+        
+        $('#modalViewPhoto').modal('show');
+    }
+
+    // Edit Foto Button - Open existing photo in cropper
+    $('#btnEditPhotoFromView').click(function() {
+        var foto = $('#viewPhotoImage').attr('src');
+        var id = $('#viewPhotoIdJuri').val();
+        
+        $('#modalViewPhoto').modal('hide');
+        
+        // Set ID and open crop modal with existing image
+        $('#cropPhotoIdJuri').val(id);
+        $('#imageToCrop').attr('src', foto);
+        $('#modalCropPhoto').modal('show');
+    });
+
+    // Upload New Photo Button
+    $('#btnUploadNewPhoto').click(function() {
+        $('#inputPhotoUpload').click();
+    });
+
+    // Handle file input change
+    $('#inputPhotoUpload').on('change', function(e) {
+        var files = e.target.files;
+        if (files && files.length > 0) {
+            var file = files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#modalViewPhoto').modal('hide');
+                $('#imageToCrop').attr('src', e.target.result);
+                $('#modalCropPhoto').modal('show');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Initialize Cropper when modal shown
+    $('#modalCropPhoto').on('shown.bs.modal', function() {
+        var image = document.getElementById('imageToCrop');
+        if (cropperInstance) {
+            cropperInstance.destroy();
+        }
+        cropperInstance = new Cropper(image, {
+            aspectRatio: 3 / 4,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.8,
+            responsive: true,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true
+        });
+    });
+
+    // Destroy Cropper when modal hidden
+    $('#modalCropPhoto').on('hidden.bs.modal', function() {
+        if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+        // Reset file input
+        $('#inputPhotoUpload').val('');
+    });
+
+    // Zoom In
+    $('#btnZoomIn').click(function() {
+        if (cropperInstance) cropperInstance.zoom(0.1);
+    });
+
+    // Zoom Out
+    $('#btnZoomOut').click(function() {
+        if (cropperInstance) cropperInstance.zoom(-0.1);
+    });
+
+    // Move/Drag Mode
+    $('#btnMove').click(function() {
+        if (cropperInstance) cropperInstance.setDragMode('move');
+    });
+
+    // Reset
+    $('#btnReset').click(function() {
+        if (cropperInstance) cropperInstance.reset();
+    });
+
+    // Save Cropped Photo
+    $('#btnSaveCroppedPhoto').click(function() {
+        if (!cropperInstance) {
+            Swal.fire('Error', 'Cropper tidak tersedia', 'error');
+            return;
+        }
+        
+        var canvas = cropperInstance.getCroppedCanvas({
+            width: 600,
+            height: 800,
+        });
+        
+        if (!canvas) {
+            Swal.fire('Error', 'Gagal membuat canvas', 'error');
+            return;
+        }
+        
+        canvas.toBlob(function(blob) {
+            var reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                var base64data = reader.result;
+                
+                // Ajax Upload
+                $.ajax({
+                    url: '<?= base_url('backend/juri/updateFoto') ?>',
+                    method: 'POST',
+                    data: {
+                        id_juri: $('#cropPhotoIdJuri').val(),
+                        image: base64data
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#modalCropPhoto').modal('hide');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message,
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(function() {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Gagal', response.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Gagal mengupload gambar', 'error');
+                    }
+                });
             }
         });
     });

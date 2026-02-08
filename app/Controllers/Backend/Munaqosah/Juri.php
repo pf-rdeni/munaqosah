@@ -527,4 +527,82 @@ class Juri extends BaseController
             'message' => 'Grup Juri berhasil diupdate.'
         ]);
     }
+    /**
+     * Update Foto Profil Juri (AJAX)
+     */
+    public function updateFoto()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+        
+        $juriId = $this->request->getPost('id_juri'); // ID Juri Table
+        if (!$juriId) {
+             return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID Juri tidak ditemukan'
+            ]);
+        }
+        
+        $juri = $this->juriModel->find($juriId);
+        if (!$juri || empty($juri['user_id'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data User Juri tidak ditemukan'
+            ]);
+        }
+
+        $fotoBase64 = $this->request->getPost('image');
+        
+        if (empty($fotoBase64)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data gambar kosong'
+            ]);
+        }
+
+        try {
+            // Extract base64 data
+            $parts = explode(',', $fotoBase64);
+            $imageData = base64_decode(end($parts));
+            
+            // Generate filename: user_img_[USER_ID]_[TIMESTAMP].jpg
+            $filename = 'user_img_' . $juri['user_id'] . '_' . time() . '.jpg';
+            $uploadPath = FCPATH . 'uploads/user_images/';
+            
+            // Create directory if not exists
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
+            // Hapus foto lama jika ada (dan bukan default/avatar external)
+            $oldUser = $this->userModel->find($juri['user_id']);
+            if (!empty($oldUser['user_image']) && file_exists(FCPATH . $oldUser['user_image'])) {
+                unlink(FCPATH . $oldUser['user_image']);
+            }
+            
+            // Save new file
+            file_put_contents($uploadPath . $filename, $imageData);
+            
+            // Update database users table
+            $this->userModel->update($juri['user_id'], [
+                'user_image' => 'uploads/user_images/' . $filename
+            ]);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Foto profil berhasil diperbarui',
+                'new_image' => base_url('uploads/user_images/' . $filename)
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
