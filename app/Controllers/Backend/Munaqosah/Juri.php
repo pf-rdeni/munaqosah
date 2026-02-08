@@ -569,16 +569,16 @@ class Juri extends BaseController
             $parts = explode(',', $fotoBase64);
             $imageData = base64_decode(end($parts));
             
-            // Generate filename: user_img_[USER_ID]_[TIMESTAMP].jpg
-            $filename = 'user_img_' . $juri['user_id'] . '_' . time() . '.jpg';
-            $uploadPath = FCPATH . 'uploads/user_images/';
+            // Generate filename: Profil_[USER_ID]_[TIMESTAMP].jpg
+            $filename = 'Profil_' . $juri['user_id'] . '_' . time() . '.jpg';
+            $uploadPath = FCPATH . 'writable/uploads/profil/user/';
             
             // Create directory if not exists
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
             
-            // Hapus foto lama jika ada (dan bukan default/avatar external)
+            // Hapus foto lama jika ada
             $oldUser = $this->userModel->find($juri['user_id']);
             if (!empty($oldUser['user_image']) && file_exists(FCPATH . $oldUser['user_image'])) {
                 unlink(FCPATH . $oldUser['user_image']);
@@ -588,14 +588,25 @@ class Juri extends BaseController
             file_put_contents($uploadPath . $filename, $imageData);
             
             // Update database users table
+            $dbPath = 'writable/uploads/profil/user/' . $filename;
             $this->userModel->update($juri['user_id'], [
-                'user_image' => 'uploads/user_images/' . $filename
+                'user_image' => $dbPath
             ]);
+            
+            // Cleanup old directory if empty (optional, but good practice per user request to 'hapus yang lama')
+            $oldDir = FCPATH . 'uploads/user_images/';
+            if (is_dir($oldDir)) {
+                // Check if directory is empty
+                $files = array_diff(scandir($oldDir), array('.', '..'));
+                if (empty($files)) {
+                    rmdir($oldDir);
+                }
+            }
             
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Foto profil berhasil diperbarui',
-                'new_image' => base_url('uploads/user_images/' . $filename)
+                'new_image' => base_url($dbPath)
             ]);
             
         } catch (\Exception $e) {

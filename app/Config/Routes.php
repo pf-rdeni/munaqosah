@@ -90,6 +90,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->post('juri/saveJuriKriteria', 'Munaqosah\Juri::saveJuriKriteria');
     $routes->get('juri/generateUsername/(:num)', 'Munaqosah\Juri::generateUsername/$1');
     $routes->post('juri/updateGrupJuri', 'Munaqosah\Juri::updateGrupJuri');
+    $routes->post('juri/updateFoto', 'Munaqosah\Juri::updateFoto');
 
     // Manajemen Grup Materi
     $routes->get('grup-materi', 'Munaqosah\GrupMateri::index');

@@ -648,6 +648,10 @@
     $('#inputPhotoUpload').on('change', function(e) {
         var files = e.target.files;
         if (files && files.length > 0) {
+            // TRANSFER ID TO CROP MODAL
+            var id = $('#viewPhotoIdJuri').val();
+            $('#cropPhotoIdJuri').val(id);
+
             var file = files[0];
             var reader = new FileReader();
             reader.onload = function(e) {
