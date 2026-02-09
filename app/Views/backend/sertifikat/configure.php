@@ -946,10 +946,75 @@
                     ctx.fillRect(x + boxWidth - 10, y + boxHeight - 10, 10, 10);
                 }
 
-            } else if (field.name.startsWith('block_')) {
-                // Other Blocks (Header, Footer)
+            } else if (field.name.startsWith('block_materi_')) {
+                // Special Visual for Materi Table Block
+                // We use font_size to determine scale, similar to block_table but maybe tailored
+                var boxHeight = Math.max(field.font_size * 6, 100);
+                var boxWidth = (field.max_width > 0) ? field.max_width : (canvas.width - (field.x * 2));
+                if (boxWidth < 200) boxWidth = 200; // Min width
 
-            } else {
+                var x = field.x;
+                var y = field.y;
+                
+                // Draw Table Background
+                ctx.fillStyle = '#f9f9f9';
+                ctx.fillRect(x, y, boxWidth, boxHeight);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+                 // Header Row (Materi Name)
+                var headerHeight = field.font_size * 1.5;
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillRect(x, y, boxWidth, headerHeight);
+                ctx.strokeRect(x, y, boxWidth, headerHeight);
+                
+                // Header Text
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold ' + (field.font_size) + 'px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(field.label, x + 10, y + (headerHeight/2));
+
+                // Column Headers
+                var colHeaderY = y + headerHeight;
+                ctx.beginPath();
+                ctx.moveTo(x, colHeaderY + headerHeight);
+                ctx.lineTo(x + boxWidth, colHeaderY + headerHeight);
+                ctx.stroke();
+
+                // Columns
+                var cols = [0.05, 0.40, 0.55, 0.70]; 
+                cols.forEach(p => {
+                    var cx = x + (boxWidth * p);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, colHeaderY);
+                    ctx.lineTo(cx, y + boxHeight);
+                    ctx.stroke();
+                });
+
+                // Dummy Rows
+                var rowHeight = field.font_size * 1.2;
+                for (var r = colHeaderY + headerHeight + rowHeight; r < y + boxHeight - rowHeight; r += rowHeight) {
+                     ctx.beginPath();
+                     ctx.moveTo(x, r);
+                     ctx.lineTo(x + boxWidth, r);
+                     ctx.strokeStyle = '#eee';
+                     ctx.stroke();
+                }
+
+                // Selection Box
+                if (isActive) {
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, boxWidth, boxHeight);
+                    
+                    // Handle for resize
+                    field._handleBounds = {x: x + boxWidth - 10, y: y + boxHeight - 10, width: 10, height: 10};
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(x + boxWidth - 10, y + boxHeight - 10, 10, 10);
+                }
+
                 // Text Field
                 ctx.font = `${field.font_style === 'B' ? 'bold' : 'normal'} ${field.font_size}px ${field.font_family}`;
                 ctx.textAlign = field.text_align === 'C' ? 'center' : (field.text_align === 'R' ? 'right' : 'left');
@@ -969,6 +1034,133 @@
                     ctx.fillText(field.sample, field.x, field.y);
                 } else {
                     // Normal text without outline
+                    ctx.fillStyle = field.text_color;
+                    ctx.fillText(field.sample, field.x, field.y);
+                }
+
+                if (isActive) {
+                    var dims = getFieldDimensions(field);
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(dims.x - 2, dims.y - 2, dims.width + 4, dims.height + 4);
+                    
+                    // Handle
+                    field._handleBounds = {x: dims.x + dims.width - 5, y: dims.y + dims.height - 5, width: 10, height: 10};
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(dims.x + dims.width - 5, dims.y + dims.height - 5, 10, 10);
+                }
+            } else if (field.name.startsWith('block_group_')) {
+                 // Special Visual for Group Table Block
+                var boxHeight = Math.max(field.font_size * 6, 100);
+                var boxWidth = (field.max_width > 0) ? field.max_width : (canvas.width - (field.x * 2));
+                if (boxWidth < 200) boxWidth = 200; // Min width
+
+                var x = field.x;
+                var y = field.y;
+                
+                // Draw Table Background (Light Cyan for Groups)
+                ctx.fillStyle = '#e0f7fa';
+                ctx.fillRect(x, y, boxWidth, boxHeight);
+                ctx.strokeStyle = '#006064';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+                 // Header Row (Group Name)
+                var headerHeight = field.font_size * 1.5;
+                ctx.fillStyle = '#b2ebf2';
+                ctx.fillRect(x, y, boxWidth, headerHeight);
+                ctx.strokeRect(x, y, boxWidth, headerHeight);
+                
+                // Header Text
+                ctx.fillStyle = '#006064';
+                ctx.font = 'bold ' + (field.font_size) + 'px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(field.label, x + 10, y + (headerHeight/2));
+
+                // Column Headers
+                var colHeaderY = y + headerHeight;
+                ctx.beginPath();
+                ctx.moveTo(x, colHeaderY + headerHeight);
+                ctx.lineTo(x + boxWidth, colHeaderY + headerHeight);
+                ctx.stroke();
+
+                // Columns
+                var cols = [0.05, 0.40, 0.55, 0.70]; 
+                cols.forEach(p => {
+                    var cx = x + (boxWidth * p);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, colHeaderY);
+                    ctx.lineTo(cx, y + boxHeight);
+                    ctx.stroke();
+                });
+
+                // Dummy Rows
+                var rowHeight = field.font_size * 1.2;
+                for (var r = colHeaderY + headerHeight + rowHeight; r < y + boxHeight - rowHeight; r += rowHeight) {
+                     ctx.beginPath();
+                     ctx.moveTo(x, r);
+                     ctx.lineTo(x + boxWidth, r);
+                     ctx.strokeStyle = '#80deea';
+                     ctx.stroke();
+                }
+
+                // Selection Box
+                if (isActive) {
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, boxWidth, boxHeight);
+                    
+                    // Handle for resize
+                    field._handleBounds = {x: x + boxWidth - 10, y: y + boxHeight - 10, width: 10, height: 10};
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(x + boxWidth - 10, y + boxHeight - 10, 10, 10);
+                }
+
+                // Text Field Sample
+                ctx.font = `${field.font_style === 'B' ? 'bold' : 'normal'} ${field.font_size}px ${field.font_family}`;
+                ctx.textAlign = field.text_align === 'C' ? 'center' : (field.text_align === 'R' ? 'right' : 'left');
+                ctx.textBaseline = 'top';
+
+                if (field.has_border) {
+                     ctx.strokeStyle = field.border_color || '#000000';
+                     ctx.lineWidth = (field.border_width || 1) * 2;
+                     ctx.strokeText(field.sample, field.x, field.y);
+                     ctx.fillStyle = field.text_color;
+                     ctx.fillText(field.sample, field.x, field.y);
+                } else {
+                     ctx.fillStyle = field.text_color;
+                     ctx.fillText(field.sample, field.x, field.y);
+                }
+                 
+                 if (isActive) {
+                    var dims = getFieldDimensions(field);
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(dims.x - 2, dims.y - 2, dims.width + 4, dims.height + 4);
+                    // Handle
+                    field._handleBounds = {x: dims.x + dims.width - 5, y: dims.y + dims.height - 5, width: 10, height: 10};
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(dims.x + dims.width - 5, dims.y + dims.height - 5, 10, 10);
+                }
+                 
+            } else {
+                 // GENERIC TEXT FIELDS
+                ctx.font = `${field.font_style === 'B' ? 'bold' : 'normal'} ${field.font_size}px ${field.font_family}`;
+                ctx.textAlign = field.text_align === 'C' ? 'center' : (field.text_align === 'R' ? 'right' : 'left');
+                ctx.textBaseline = 'top';
+
+                // Draw text with stroke outline if enabled
+                if (field.has_border) {
+                    ctx.strokeStyle = field.border_color || '#000000';
+                    ctx.lineWidth = (field.border_width || 1) * 2;
+                    ctx.lineJoin = 'round';
+                    ctx.miterLimit = 2;
+                    ctx.strokeText(field.sample, field.x, field.y);
+                    
+                    ctx.fillStyle = field.text_color;
+                    ctx.fillText(field.sample, field.x, field.y);
+                } else {
                     ctx.fillStyle = field.text_color;
                     ctx.fillText(field.sample, field.x, field.y);
                 }

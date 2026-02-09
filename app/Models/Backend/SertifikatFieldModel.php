@@ -56,7 +56,7 @@ class SertifikatFieldModel extends Model
     /**
      * Get available field definitions
      */
-    public function getAvailableFields($halaman = 'depan')
+    public function getAvailableFields($halaman = 'depan', $designStyle = 1)
     {
         // Common Real Data Fields
         $commonFields = [
@@ -148,15 +148,49 @@ class SertifikatFieldModel extends Model
         ];
 
         if ($halaman == 'belakang') {
-            // Back Page: Common Fields + Table Block
-            $backFields = array_merge($commonFields, [
-                [
-                    'name' => 'block_table',
-                    'label' => 'Block: Tabel Nilai',
-                    'sample' => '[TABEL NILAI]'
-                ]
-            ]);
-            return $backFields;
+            // Check Design Style
+            if ($designStyle == 2 || $designStyle == 'option2') {
+                // Option 2: Individual Tables per Materi OR per Group
+                
+                // 1. Fetch Materi (Exact Matches)
+                $materiModel = new \App\Models\Munaqosah\MateriModel();
+                $allMateri = $materiModel->findAll();
+                
+                $materiFields = [];
+                foreach ($allMateri as $materi) {
+                    $materiFields[] = [
+                        'name' => 'block_materi_' . $materi['id'],
+                        'label' => 'Tabel Materi: ' . $materi['nama_materi'],
+                        'sample' => '[Tabel ' . $materi['nama_materi'] . ']'
+                    ];
+                }
+
+                // 2. Fetch Groups (Group Matches)
+                $grupModel = new \App\Models\Munaqosah\GrupMateriModel();
+                $allGrup = $grupModel->findAll();
+
+                $grupFields = [];
+                foreach ($allGrup as $grup) {
+                    $grupFields[] = [
+                        'name' => 'block_group_' . $grup['id'],
+                        'label' => 'Tabel Grup: ' . $grup['nama_grup_materi'],
+                        'sample' => '[Tabel Grup ' . $grup['nama_grup_materi'] . ']'
+                    ];
+                }
+                
+                return array_merge($commonFields, $materiFields, $grupFields);
+                
+            } else {
+                // Option 1: Common Table Block (Summary)
+                $backFields = array_merge($commonFields, [
+                    [
+                        'name' => 'block_table',
+                        'label' => 'Block: Tabel Nilai (Rekap)',
+                        'sample' => '[TABEL REKAP]'
+                    ]
+                ]);
+                return $backFields;
+            }
         }
 
         // Front Page: Common Fields + Images

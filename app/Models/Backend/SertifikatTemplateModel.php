@@ -18,6 +18,8 @@ class SertifikatTemplateModel extends Model
         'width',
         'height',
         'orientation',
+        'design_style',
+        'is_active'
     ];
 
     protected $useTimestamps = true;
@@ -26,7 +28,7 @@ class SertifikatTemplateModel extends Model
     protected $updatedField = 'updated_at';
 
     protected $validationRules = [
-        'halaman' => 'required|in_list[depan,belakang]|is_unique[tbl_munaqosah_sertifikat_template.halaman,id,{id}]',
+        'halaman' => 'required|in_list[depan,belakang]',
         'file_template' => 'required|max_length[255]',
         'width' => 'required|integer',
         'height' => 'required|integer',
@@ -36,16 +38,32 @@ class SertifikatTemplateModel extends Model
         'halaman' => [
             'required' => 'Halaman harus dipilih (depan/belakang)',
             'in_list' => 'Halaman tidak valid',
-            'is_unique' => 'Template untuk halaman ini sudah ada',
         ],
     ];
 
     /**
      * Get template by page type
      */
+    /**
+     * Get active template by page type
+     */
     public function getTemplateByHalaman($halaman)
     {
-        return $this->where('halaman', $halaman)->first();
+        // For 'depan', there is only one style (1), but let's be safe
+        // For 'belakang', return the one with is_active = 1
+        return $this->where('halaman', $halaman)
+                    ->orderBy('is_active', 'DESC') // Prefer active
+                    ->first();
+    }
+
+    /**
+     * Get template by page type and style
+     */
+    public function getTemplateByHalamanAndStyle($halaman, $style)
+    {
+        return $this->where('halaman', $halaman)
+                    ->where('design_style', $style)
+                    ->first();
     }
 
     /**

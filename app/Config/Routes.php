@@ -38,6 +38,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
         $routes->post('upload', 'Sertifikat::uploadTemplate');
         $routes->get('configure/(:any)', 'Sertifikat::configure/$1');
         $routes->post('save-config', 'Sertifikat::saveFieldConfig');
+        $routes->post('save-design-style', 'Sertifikat::saveDesignStyle');
         $routes->get('preview/(:any)', 'Sertifikat::preview/$1');
         $routes->get('delete/(:any)', 'Sertifikat::delete/$1');
     });

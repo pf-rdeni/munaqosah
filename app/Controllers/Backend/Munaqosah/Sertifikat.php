@@ -27,12 +27,32 @@ class Sertifikat extends BaseController
 
         // Get existing templates
         $templateDepan = $this->templateModel->getTemplateByHalaman('depan');
+        
+        // Fetch ACTIVE back template
         $templateBelakang = $this->templateModel->getTemplateByHalaman('belakang');
+        
+        // Also fetch specific style templates to pass to view for "Configure" links
+        // If active one is Style 1, we might also want to know if Style 2 exists (to show its image if user clicks Option 2)
+        // But for allowed complexity, let's just rely on AJAX or simplest approach:
+        // The View will need to know the ID of Style 1 and Style 2 templates if they exist.
+        
+        $templateBelakang1 = $this->templateModel->getTemplateByHalamanAndStyle('belakang', 'option1');
+        $templateBelakang2 = $this->templateModel->getTemplateByHalamanAndStyle('belakang', 'option2');
+        
+        // Current active style
+        $activeStyle = $templateBelakang ? ($templateBelakang['design_style'] ?? 'option1') : 'option1';
 
         $data = [
             'page_title' => 'Pengaturan Sertifikat Munaqosah',
             'template_depan' => $templateDepan,
-            'template_belakang' => $templateBelakang,
+            'template_belakang' => $templateBelakang, // active one
+            
+            // Pass specific templates for options
+            'template_belakang_1' => $templateBelakang1,
+            'template_belakang_2' => $templateBelakang2,
+            
+            'active_style' => $activeStyle,
+
             'user' => $this->getCurrentUser(),
             'tahunAjaran' => $this->getTahunAjaran(),
             'availableTahunAjaran' => $this->getAvailableTahunAjaran(),
@@ -52,7 +72,9 @@ class Sertifikat extends BaseController
 
         $halaman = $this->request->getPost('halaman'); // depan or belakang
         $orientation = $this->request->getPost('orientation') ?? 'landscape';
-
+        // Note: For 'belakang', we should upload to the ACTIVE style, OR receive style from form.
+        // As per workflow, user selects Style -> Active is updated -> Upload targets Active.
+        
         if (!in_array($halaman, ['depan', 'belakang'])) {
             return $this->response->setJSON(['success' => false, 'message' => 'Halaman tidak valid']);
         }
@@ -84,7 +106,7 @@ class Sertifikat extends BaseController
             $imagePath = $uploadPath . $newName;
             list($width, $height) = getimagesize($imagePath);
 
-            // Check if template exists for this page
+            // Determine Target Record
             $existingTemplate = $this->templateModel->getTemplateByHalaman($halaman);
             
             if ($existingTemplate) {
@@ -104,13 +126,14 @@ class Sertifikat extends BaseController
                     'width' => $width,
                     'height' => $height,
                     'orientation' => $orientation,
+                    'is_active' => 1 // Ensure it stays active
                 ];
 
                 // 3. Update DB
                 if ($this->templateModel->update($existingTemplate['id'], $updateData)) {
                     return $this->response->setJSON([
                         'success' => true,
-                        'message' => 'Template berhasil diperbarui (Field konfigurasi tetap tersimpan)',
+                        'message' => 'Template berhasil diperbarui',
                         'template_id' => $existingTemplate['id']
                     ]);
                 }
@@ -122,6 +145,8 @@ class Sertifikat extends BaseController
                     'width' => $width,
                     'height' => $height,
                     'orientation' => $orientation,
+                    'design_style' => ($halaman == 'depan') ? 1 : 'option1', // Default
+                    'is_active' => 1
                 ];
 
                 if ($this->templateModel->insert($data)) {
@@ -141,26 +166,96 @@ class Sertifikat extends BaseController
     }
 
     /**
-     * Halaman konfigurasi field
+     * Simpan Style Desain (Option 1 vs Option 2)
      */
-    public function configure($halaman)
+    public function saveDesignStyle()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Session expired']);
+        }
+
+        $style = $this->request->getPost('design_style');
+        
+        if (!in_array($style, ['option1', 'option2'])) {
+             return $this->response->setJSON(['success' => false, 'message' => 'Style tidak valid']);
+        }
+
+        $this->templateModel->db->transStart();
+
+        try {
+            // 1. Deactivate ALL 'belakang' templates
+            $this->templateModel->where('halaman', 'belakang')->set(['is_active' => 0])->update();
+            
+            // 2. Activate the selected style
+            // Check if it exists
+            $existing = $this->templateModel->getTemplateByHalamanAndStyle('belakang', $style);
+            
+            if ($existing) {
+                $this->templateModel->update($existing['id'], ['is_active' => 1]);
+                $message = 'Desain berhasil diubah ke Opsi ' . $style;
+            } else {
+                // If it doesn't exist, we should probably create a placeholder record?
+                // Or just creating it with no file.
+                // Let's create a placeholder record so ID exists for configuration/upload
+                $this->templateModel->insert([
+                    'halaman' => 'belakang',
+                    'design_style' => $style,
+                    'is_active' => 1,
+                    'file_template' => '', // Empty initially
+                    'width' => 0,
+                    'height' => 0,
+                    'orientation' => 'landscape' // Default
+                ]);
+                $message = 'Desain Opsi ' . $style . ' diaktifkan. Silakan upload template.';
+            }
+
+            $this->templateModel->db->transComplete();
+            
+            return $this->response->setJSON(['success' => true, 'message' => $message]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Halaman konfigurasi field
+     * @param string|int $identifier Halaman (depan/belakang) OR Template ID
+     */
+    public function configure($identifier)
     {
         if (!$this->isLoggedIn()) return redirect()->to('/login');
 
-        $template = $this->templateModel->getTemplateByHalaman($halaman);
-        if (!$template) {
-            return redirect()->to(base_url('backend/sertifikat'))->with('error', 'Template belum diupload');
+        // Check if identifier is numeric (ID) or string (halaman)
+        if (is_numeric($identifier)) {
+            $template = $this->templateModel->find($identifier);
+        } else {
+            $template = $this->templateModel->getTemplateByHalaman($identifier);
         }
 
+        if (!$template) {
+            return redirect()->to(base_url('backend/sertifikat'))->with('error', 'Template belum diupload atau tidak ditemukan');
+        }
+
+        $halaman = $template['halaman'];
         $fields = $this->fieldModel->getFieldsByTemplate($template['id']);
-        $availableFields = $this->fieldModel->getAvailableFields($halaman);
+        
+        $designStyle = $template['design_style'] ?? 1;
+        $availableFields = $this->fieldModel->getAvailableFields($halaman, $designStyle);
+
+        // Identify logic for title
+        $titleSuffix = ucfirst($halaman);
+        if ($halaman == 'belakang') {
+             $style = $template['design_style'] ?? 1;
+             $titleSuffix .= " (Opsi $style)";
+        }
 
         $data = [
-            'page_title' => 'Konfigurasi Sertifikat - ' . ucfirst($halaman),
+            'page_title' => 'Konfigurasi Sertifikat - ' . $titleSuffix,
             'template' => $template,
             'fields' => $fields,
             'available_fields' => $availableFields,
-            'halaman' => $halaman,
+            'halaman' => $halaman, // Still needed for JS helpers?
             'user' => $this->getCurrentUser(),
             'tahunAjaran' => $this->getTahunAjaran(),
             'availableTahunAjaran' => $this->getAvailableTahunAjaran(),

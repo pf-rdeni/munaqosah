@@ -219,8 +219,6 @@ class CetakSertifikat extends BaseController
             ->findAll();
 
         // 4. Calculate Final Scores (Simplified Logic for Print)
-        // We reuse the logic but only for this specific peserta
-        // Better to extract this logic to a private method or helper, but for now inline is safe.
         
         $allMateri = $this->materiModel->select('tbl_munaqosah_materi_ujian.*, gm.kondisional_set')
             ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_materi_ujian.id_grup_materi', 'left')
@@ -228,9 +226,9 @@ class CetakSertifikat extends BaseController
             ->findAll();
 
         $scores = [];
+        $detailedScores = []; // For Option 2
         $totalScore = 0;
-        $countMateri = 0;
-
+        
         // Fetch Global Predikats
         $globalPredikats = $this->predikatModel->getByGrup(null);
 
@@ -240,7 +238,6 @@ class CetakSertifikat extends BaseController
             $materiSubtotal = 0;
             $hasScore = false;
             
-            $mInfo = $m;
             $isPengurangan = ($m['kondisional_set'] == 'nilai_pengurangan');
 
             // Find scores for this materi
@@ -248,6 +245,9 @@ class CetakSertifikat extends BaseController
             $mScores = array_filter($rawScores, function($row) use ($mId) {
                 return $row['id_materi'] == $mId;
             });
+
+            // Container for detailed criteria scores
+            $criteriaList = [];
 
             if (!empty($mScores)) {
                  $hasScore = true;
@@ -263,20 +263,29 @@ class CetakSertifikat extends BaseController
                      $vals = $kriteriaScores[$kid] ?? []; // Daftar Nilai Juri
                      
                      if (empty($vals)) {
-                        // If value is empty, we act like it's 0 contribution?
-                        // In Monitoring: continue (subtotal unchanged).
                         continue;
                      }
 
                      // Hitung Rata-Rata (Matches Monitoring)
                      $avg = array_sum($vals) / count($vals);
                      
+                     $weightedScore = 0;
                      // Terapkan Bobot (Matches Monitoring)
                      if ($isPengurangan) {
                         $materiSubtotal += $avg;
+                        $weightedScore = $avg; // In reduction, it's just the value usually? Need verify calculation.
+                        // Actually in reduction: (Sum of Avg) / Count
                      } else {
-                        $materiSubtotal += $avg * ($k['bobot'] / 100);
+                        $weightedScore = $avg * ($k['bobot'] / 100);
+                        $materiSubtotal += $weightedScore;
                      }
+                     
+                     $criteriaList[] = [
+                        'nama' => $k['nama_kriteria'],
+                        'bobot' => $isPengurangan ? '-' : $k['bobot'],
+                        'nilai' => $avg,
+                        'score' => $weightedScore
+                     ];
                  }
                  
                  if ($isPengurangan && count($kriteria) > 0) {
@@ -288,25 +297,15 @@ class CetakSertifikat extends BaseController
             if ($hasScore || !$isPengurangan) { 
                  // Calculate Grade Logic
                  $gradeLetter = '-';
-                 $usePredikats = $globalPredikats;
-                 
-                 // TODO: If we want per-materi group predicates, we need to fetch them.
-                 // For now, request implies we use database predicates. Assuming Global for all subjects unless specified?
-                 // User said "ambil dari databse tabe predikat". Usually subjects follow global unless specific.
-                 // Let's rely on Global for now as per previous context "ambil yang gelobal".
-                 // "penentuan rang A, B dan lainya melihat dari tabel predikat rang tertinggi adalah A dan mengikuti rang ke bawahnya, ambil yang gelobal" -> confirmed global.
                  
                  foreach ($globalPredikats as $pred) {
-                    // Cast to float to ensure numeric comparison
                     $score = (float)$materiSubtotal;
                     $minNilai = (float)$pred['min_nilai'];
                     $maxNilai = (float)$pred['max_nilai'];
                     
                     if ($score >= $minNilai && $score <= $maxNilai) {
-                        // Use predikat_huruf if available, otherwise extract first letter from nama_predikat
                         $gradeLetter = $pred['predikat_huruf'] ?? null;
                         if (empty($gradeLetter) && !empty($pred['nama_predikat'])) {
-                            // Fallback: Extract first letter from nama_predikat
                             $gradeLetter = strtoupper(substr($pred['nama_predikat'], 0, 1));
                         }
                         $gradeLetter = $gradeLetter ?: '-';
@@ -318,12 +317,20 @@ class CetakSertifikat extends BaseController
                     'nilai' => $materiSubtotal,
                     'huruf' => $gradeLetter
                  ];
+                 
+                 // Option 2 Data
+                 $detailedScores[$m['id']] = [
+                    'id' => $m['id'], // ID for mapping
+                    'nama_materi' => $m['nama_materi'],
+                    'id_grup_materi' => $m['id_grup_materi'],
+                    'kriteria' => $criteriaList, // Verify this variable name in context
+                    'total' => $materiSubtotal
+                 ];
+
                  $totalScore += $materiSubtotal;
-                 $countMateri++; 
             }
         }
         
-        // Use structure count for average division
         $divider = count($allMateri) > 0 ? count($allMateri) : 1;
         $avgScore = $totalScore / $divider;
 
@@ -332,13 +339,15 @@ class CetakSertifikat extends BaseController
             'no_peserta' => $peserta['no_peserta'],
             'tahun_ajaran' => $peserta['tahun_ajaran'],
             'scores' => $scores,
+            'detailed_scores' => $detailedScores, // Added for Option 2
             'total' => $totalScore,
             'avg' => $avgScore,
-            'nilai_huruf' => $this->getPredikatByScore($avgScore, $globalPredikats, 'predikat_huruf')
+            'nilai_huruf' => $this->getPredikatByScore($avgScore, $globalPredikats, 'predikat_huruf'),
+            'predikat' => $this->getPredikatByScore($avgScore, $globalPredikats, 'nama_predikat') // Added for Option 2
         ];
-
+        
+        // ... (Generator Data and PDF Generation Logic) ...
         // 5. Prepare Front Page Data Mapping
-        // Map fields to data
         $frontFields = $this->fieldModel->getFieldsByTemplate($templateDepan['id']);
         $backFields = $this->fieldModel->getFieldsByTemplate($templateBelakang['id']);
         

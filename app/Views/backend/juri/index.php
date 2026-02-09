@@ -50,6 +50,11 @@
                                             // Prefer id_juri if available (e.g., JPS01, TT01)
                                             $avatarCode = $juri['id_juri'] ?? '';
                                             
+                                            // FIX: Remove leading zero from number (JPS04 -> JPS4)
+                                            if (!empty($avatarCode)) {
+                                                $avatarCode = preg_replace('/([A-Za-z]+)0+(\d+)/', '$1$2', $avatarCode);
+                                            }
+                                            
                                             if (empty($avatarCode)) {
                                                 // Fallback: Initials from Nama Grup Materi + Number from Username
                                                 $grupName = $juri['nama_grup_materi'] ?? '';
@@ -84,8 +89,8 @@
                                     ?>
                                     <img src="<?= $fotoUrl ?>" 
                                          alt="Foto" 
-                                         class="img-rounded img-circle" 
-                                         style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;" 
+                                         class="img-rounded" 
+                                         style="width: 30px; height: 40px; object-fit: cover; cursor: pointer;" 
                                          data-id="<?= $juri['id'] ?>"
                                          data-nama="<?= esc($juri['nama_juri']) ?>"
                                          data-foto="<?= $fotoUrlLarge ?>"

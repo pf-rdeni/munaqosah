@@ -59,14 +59,28 @@
                                         <?php if ($template_belakang): ?>
                                             <div class="mb-3">
                                                 <img src="<?= base_url('uploads/' . $template_belakang['file_template']) ?>" 
+                                                     id="preview-belakang"
                                                      class="img-fluid border" 
                                                      style="max-height: 200px;">
-                                                <p class="mt-2 text-muted">
+                                                <p class="mt-2 text-muted" id="info-belakang">
                                                     <?= $template_belakang['width'] ?> x <?= $template_belakang['height'] ?> px
                                                 </p>
                                             </div>
+                                            <div class="mb-3">
+                                                <label class="d-block text-muted small mb-2">Gaya Desain Isi:</label>
+                                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                    <label class="btn btn-outline-primary btn-sm <?= ($template_belakang['design_style'] ?? 'option1') == 'option1' ? 'active' : '' ?>">
+                                                        <input type="radio" name="design_style" value="option1" autocomplete="off" onchange="updateDesignStyle(<?= $template_belakang['id'] ?>, 'option1')" <?= ($template_belakang['design_style'] ?? 'option1') == 'option1' ? 'checked' : '' ?>> 
+                                                        Opsi 1 (Ringkasan)
+                                                    </label>
+                                                    <label class="btn btn-outline-primary btn-sm <?= ($template_belakang['design_style'] ?? 'option1') == 'option2' ? 'active' : '' ?>">
+                                                        <input type="radio" name="design_style" value="option2" autocomplete="off" onchange="updateDesignStyle(<?= $template_belakang['id'] ?>, 'option2')" <?= ($template_belakang['design_style'] ?? 'option1') == 'option2' ? 'checked' : '' ?>> 
+                                                        Opsi 2 (Detail Bobot)
+                                                    </label>
+                                                </div>
+                                            </div>
                                             <div class="btn-group">
-                                                <a href="<?= base_url('backend/sertifikat/configure/belakang') ?>" class="btn btn-primary">
+                                                <a href="<?= base_url('backend/sertifikat/configure/' . $template_belakang['id']) ?>" class="btn btn-primary" id="btn-config-belakang">
                                                     <i class="fas fa-cog"></i> Konfigurasi
                                                 </a>
                                                 <button class="btn btn-warning" onclick="openUploadModal('belakang')">
@@ -178,5 +192,60 @@ $('#formUpload').submit(function(e) {
         }
     });
 });
+
+// Data for switching views
+var templates = {
+    'option1': <?= json_encode($template_belakang_1) ?>,
+    'option2': <?= json_encode($template_belakang_2) ?>
+};
+
+function updateDesignStyle(templateId, style) {
+    // Current templateId in the call is legacy, relying on style now.
+    
+    $.post('<?= base_url('backend/sertifikat/save-design-style') ?>', {
+        design_style: style
+    }, function(response) {
+        if (response.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Tersimpan',
+                text: response.message,
+                toast: true, // Use toast to be less intrusive
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            
+            // Update UI
+            var tmpl = templates[style];
+            var imgUrl = '<?= base_url('assets/img/default.png') ?>';
+            var infoText = 'Belum ada template';
+            var configUrl = '#'; // Disable if no template
+            
+            if (tmpl && tmpl.file_template) {
+                imgUrl = '<?= base_url('uploads/') ?>' + tmpl.file_template;
+                infoText = tmpl.width + ' x ' + tmpl.height + ' px';
+                configUrl = '<?= base_url('backend/sertifikat/configure/') ?>' + tmpl.id; // Use ID explicitly
+            }
+            
+            $('#preview-belakang').attr('src', imgUrl);
+            $('#info-belakang').text(infoText);
+            
+            // Update Configure Button HREF
+            $('#btn-config-belakang').attr('href', configUrl);
+            
+            // Reload page might be safer to ensure all context is correct, but let's try dynamic update
+            // Actually, simply reloading after a short delay is robust.
+            setTimeout(function() {
+                location.reload(); 
+            }, 1000);
+
+        } else {
+            Swal.fire('Gagal', response.message, 'error');
+        }
+    }).fail(function() {
+         Swal.fire('Error', 'Gagal menghubungi server', 'error');
+    });
+}
 </script>
 <?= $this->endSection(); ?>
