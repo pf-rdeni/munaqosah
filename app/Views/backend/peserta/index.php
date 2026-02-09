@@ -303,8 +303,8 @@
             order: [[0, 'asc']]
         });
         
-        // Save Tahfidz Pilihan on Change
-        $('.select-pilihan').change(function() {
+        // Save Tahfidz Pilihan on Change (Event Delegation for DataTables)
+        $('#tabelPeserta').on('change', '.select-pilihan', function() {
             var id = $(this).data('id');
             var val = $(this).val();
             
