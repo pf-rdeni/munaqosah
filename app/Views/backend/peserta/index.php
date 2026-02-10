@@ -249,9 +249,13 @@
                                             -
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <!-- Dropdown for Pilihan -->
-                                        <select class="form-control form-control-sm select-pilihan" data-id="<?= $peserta['id'] ?>">
+                                    <td data-order="<?= $pilihan ?? 0 ?>">
+                                            <?php 
+                                            // Define currentPilihan from the processed surah data if available
+                                            $currentPilihan = $pilihan ?? null; 
+                                            $borderStyle = $currentPilihan ? 'border: 2px solid #28a745;' : 'border: 2px solid #dc3545;';
+                                            ?>
+                                        <select class="form-control form-control-sm select-pilihan" data-id="<?= $peserta['id'] ?>" style="<?= $borderStyle ?>">
                                             <option value="">-- Pilih --</option>
                                             <?php 
                                                 // Determine range for this student based on hafalan
@@ -273,7 +277,7 @@
                                                 foreach ($alquranList as $qs):
                                                     if (in_array($qs['juz'], $targetJuzList)):
                                             ?>
-                                                <option value="<?= $qs['no_surah'] ?>" <?= $pilihan == $qs['no_surah'] ? 'selected' : '' ?>>
+                                                <option value="<?= $qs['no_surah'] ?>" <?= $currentPilihan == $qs['no_surah'] ? 'selected' : '' ?>>
                                                     (Juz <?= $qs['juz'] ?>) <?= $qs['nama_surah'] ?>
                                                 </option>
                                             <?php 
@@ -321,9 +325,27 @@
         $('#tabelPeserta').on('change', '.select-pilihan', function() {
             var id = $(this).data('id');
             var val = $(this).val();
+            var $this = $(this);
             var $row = $(this).closest('tr');
             var $waBtn = $row.find('.btn-wa');
             
+            // Toggle Border Color
+            if (val) {
+                $this.css('border', '2px solid #28a745'); // Green
+            } else {
+                $this.css('border', '2px solid #dc3545'); // Red
+            }
+
+            // Update data-order for DataTables sorting
+            var $td = $this.closest('td');
+            $td.attr('data-order', val ? val : 0);
+            
+            // Invalidate the row in DataTables to re-process the sort data immediately
+            // Note: This might redraw the table, so be careful if it disrupts UX. 
+            // If it's too jarring, we can skip invalidating, but sorting won't update until next refresh/redraw.
+            var table = $('#tabelPeserta').DataTable();
+            table.cell($td).invalidate().draw(false);
+
             // 1. Save via AJAX
             $.ajax({
                 url: '<?= base_url('backend/peserta/saveTahfidzPilihan') ?>',
