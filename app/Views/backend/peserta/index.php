@@ -1,9 +1,9 @@
 <?= $this->extend('backend/template/template'); ?>
 
 <?= $this->section('content'); ?>
-<div class="row">
+<div class="row justify-content-center">
     <!-- Stats Cards -->
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="info-box bg-info">
             <span class="info-box-icon"><i class="fas fa-users"></i></span>
             <div class="info-box-content">
@@ -12,7 +12,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="info-box bg-purple">
             <span class="info-box-icon"><i class="fas fa-book-open"></i></span>
             <div class="info-box-content">
@@ -21,7 +21,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="info-box bg-success">
             <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
@@ -30,7 +30,21 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
+        <div class="info-box bg-teal">
+            <span class="info-box-icon"><i class="fas fa-list-alt"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tahfidz Pilihan</span>
+                <span class="info-box-number">
+                    <?= $sudahPilihSurah ?? 0 ?>
+                    <small style="font-size: 11px; font-weight: normal; margin-left: 5px;">
+                        (Belum Set: <b><?= $belumPilihSurah ?? 0 ?></b>)
+                    </small>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
         <div class="info-box bg-warning">
             <span class="info-box-icon"><i class="fas fa-clock"></i></span>
             <div class="info-box-content">

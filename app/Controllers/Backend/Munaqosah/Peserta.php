@@ -72,6 +72,18 @@ class Peserta extends BaseController
             }
         }
 
+        // Calculate Stats for Surah Pilihan
+        $sudahPilihSurah = 0;
+        $belumPilihSurah = 0;
+        foreach ($pesertaList as $p) {
+            $sData = json_decode($p['surah'] ?? '{}', true);
+            if (!empty($sData['tahfidz_pilihan'])) {
+                $sudahPilihSurah++;
+            } else {
+                $belumPilihSurah++;
+            }
+        }
+
         $data = [
             'title'      => 'Registrasi Peserta',
             'pageTitle'  => 'Undian No Tes & Surah',
@@ -88,7 +100,9 @@ class Peserta extends BaseController
             'belumTerdaftar'  => $belumTerdaftar,
             'pesertaList'     => $pesertaList,
             'settings'        => $settings,
-            'alquranList'     => $this->alquranModel->getAllSurahData() // For options
+            'alquranList'     => $this->alquranModel->getAllSurahData(), // For options
+            'sudahPilihSurah' => $sudahPilihSurah,
+            'belumPilihSurah' => $belumPilihSurah,
         ];
 
         return view('backend/peserta/index', $data);
