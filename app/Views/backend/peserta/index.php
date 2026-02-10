@@ -270,7 +270,7 @@
                                     </td>
                                     <td class="text-center">
                                         <?php if($peserta['no_hp']): ?>
-                                            <a href="<?= $waLink ?>" target="_blank" class="btn btn-success btn-sm" title="Kirim Info via WhatsApp">
+                                            <a href="<?= $waLink ?>" target="_blank" class="btn btn-success btn-sm btn-wa" title="Kirim Info via WhatsApp">
                                                 <i class="fab fa-whatsapp"></i>
                                             </a>
                                         <?php else: ?>
@@ -307,7 +307,10 @@
         $('#tabelPeserta').on('change', '.select-pilihan', function() {
             var id = $(this).data('id');
             var val = $(this).val();
+            var $row = $(this).closest('tr');
+            var $waBtn = $row.find('.btn-wa');
             
+            // 1. Save via AJAX
             $.ajax({
                 url: '<?= base_url('backend/peserta/saveTahfidzPilihan') ?>',
                 type: 'POST',
@@ -340,6 +343,39 @@
                     }
                 }
             });
+
+            // 2. Update WA Button Link dynamically
+            if ($waBtn.length > 0) {
+                var currentHref = $waBtn.attr('href');
+                if (currentHref) {
+                    try {
+                        var urlObj = new URL(currentHref);
+                        var oldText = urlObj.searchParams.get('text');
+                        var newPilihanText = '-';
+
+                        if (val) {
+                            var selectedText = $(this).find('option:selected').text().trim(); 
+                            // Format: (Juz 30) An-Naba
+                            var match = selectedText.match(/\(Juz (\d+)\) (.+)/);
+                            if (match) {
+                                var juz = match[1];
+                                var namaSurah = match[2];
+                                newPilihanText = "- Juz " + juz + " QS. " + val + " : " + namaSurah;
+                            }
+                        }
+
+                        // Replace the section in message
+                        // Pattern: "2. Tahfidz Pilihan:\n[content]\n\n"
+                        var regex = /(2\. Tahfidz Pilihan:\n)([\s\S]*?)(\n\n|$)/;
+                        var newText = oldText.replace(regex, "$1" + newPilihanText + "$3");
+                        
+                        urlObj.searchParams.set('text', newText);
+                        $waBtn.attr('href', urlObj.toString());
+                    } catch (e) {
+                        console.error("Error updating WA link:", e);
+                    }
+                }
+            }
         });
     });
 
