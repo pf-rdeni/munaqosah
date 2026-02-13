@@ -61,6 +61,34 @@
                         echo esc($role . ' - ' . $user['username']); 
                     ?>
                 </small>
+                <?php if (!empty($user['juri_group_id'])): ?>
+                    <div class="mt-1">
+                        <?php
+                            $guriId = $user['juri_group_id'];
+                            $badges = [
+                                1 => 'badge-primary',
+                                2 => 'badge-secondary',
+                                3 => 'badge-success',
+                                4 => 'badge-danger',
+                                5 => 'badge-warning',
+                                6 => 'badge-info',
+                                7 => 'badge-dark',
+                                8 => 'bg-indigo',
+                                9 => 'bg-lightblue',
+                                10 => 'bg-navy',
+                                11 => 'bg-olive',
+                                12 => 'bg-lime',
+                                13 => 'bg-fuchsia',
+                                14 => 'bg-maroon',
+                                15 => 'bg-purple'
+                            ];
+                            $badgeClass = $badges[$guriId] ?? 'badge-secondary';
+                        ?>
+                        <span class="badge <?= $badgeClass ?> elevation-1">
+                            <i class="fas fa-users mr-1"></i> Grup <?= esc($guriId) ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 

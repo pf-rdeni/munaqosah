@@ -92,6 +92,8 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
     $routes->get('juri/generateUsername/(:num)', 'Munaqosah\Juri::generateUsername/$1');
     $routes->post('juri/updateGrupJuri', 'Munaqosah\Juri::updateGrupJuri');
     $routes->post('juri/updateFoto', 'Munaqosah\Juri::updateFoto');
+    $routes->get('juri/downloadManualFormPdf/(:num)', 'Munaqosah\Juri::downloadManualFormPdf/$1');
+    $routes->get('juri/downloadManualFormExcel/(:num)', 'Munaqosah\Juri::downloadManualFormExcel/$1');
 
     // Manajemen Grup Materi
     $routes->get('grup-materi', 'Munaqosah\GrupMateri::index');

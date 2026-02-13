@@ -1,6 +1,112 @@
 <?= $this->extend('backend/template/template'); ?>
 
 <?= $this->section('content'); ?>
+<div class="row mb-3">
+    <!-- STATS CARD -->
+    <div class="col-md-6">
+        <div class="card card-info card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-chart-pie mr-1"></i> Info Statistik Juri</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="info-box shadow-none bg-light">
+                            <span class="info-box-icon"><i class="fas fa-users text-info"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Juri</span>
+                                <span class="info-box-number"><?= $stats['total_juri'] ?? 0 ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="info-box shadow-none bg-light">
+                            <span class="info-box-icon"><i class="fas fa-layer-group text-success"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Grup</span>
+                                <span class="info-box-number"><?= $stats['total_grup'] ?? 0 ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h6>Juri per Grup Materi:</h6>
+                <div style="max-height: 150px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush list-group-sm">
+                        <?php if(!empty($stats['detail_grup'])): ?>
+                            <?php foreach($stats['detail_grup'] as $s): ?>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                    <?= esc($s['nama_grup_materi']) ?>
+                                    <span class="badge badge-info badge-pill"><?= $s['jumlah'] ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <li class="list-group-item text-muted">Belum ada data</li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANUAL FORM CARD -->
+    <div class="col-md-6">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-file-alt mr-1"></i> Download Form Manual</h3>
+                <div class="card-tools">
+                     <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Form penilaian manual (backup) berbentuk tabel kosong sesuai kriteria.</p>
+                
+                <div class="form-group">
+                    <label>Pilih Grup Materi:</label>
+                    <select class="form-control" id="selectGrupMateriForm">
+                        <option value="">-- Pilih Grup Materi --</option>
+                        <?php foreach($grupMateriList as $gm): ?>
+                            <option value="<?= $gm['id'] ?>"><?= esc($gm['nama_grup_materi']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Preview Table Container -->
+                <div id="previewFormContainer" class="mb-3 d-none">
+                     <div class="table-responsive" style="max-height: 200px; border: 1px solid #ddd;">
+                        <table class="table table-bordered table-sm table-head-fixed text-nowrap" id="previewTable">
+                            <thead>
+                                <tr id="previewHeaderRow">
+                                    <!-- Dynamic Headers -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Only show 1 example row -->
+                                <tr><td colspan="5" class="text-center text-muted"><em>Preview (Header Saja)</em></td></tr>
+                            </tbody>
+                        </table>
+                     </div>
+                </div>
+
+                <div class="btn-group w-100">
+                    <button type="button" class="btn btn-default" id="btnPreviewForm" onclick="previewForm()">
+                        <i class="fas fa-eye mr-1"></i> Preview
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="downloadForm('pdf')">
+                        <i class="fas fa-file-pdf mr-1"></i> PDF
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="downloadForm('excel')">
+                        <i class="fas fa-file-excel mr-1"></i> Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -773,5 +879,36 @@
             }
         });
     });
+    // ==================== MANUAL FORM LOGIC ====================
+    function downloadForm(type) {
+        var id = $('#selectGrupMateriForm').val();
+        if (!id) {
+            Swal.fire('Peringatan', 'Silakan pilih Grup Materi terlebih dahulu', 'warning');
+            return;
+        }
+        
+        var url = '';
+        if (type === 'pdf') {
+            url = '<?= base_url('backend/juri/downloadManualFormPdf') ?>/' + id;
+        } else {
+            url = '<?= base_url('backend/juri/downloadManualFormExcel') ?>/' + id;
+        }
+        
+        window.open(url, '_blank');
+    }
+
+    function previewForm() {
+        var id = $('#selectGrupMateriForm').val();
+         if (!id) {
+            Swal.fire('Peringatan', 'Silakan pilih Grup Materi terlebih dahulu', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Info',
+            text: 'Silakan download PDF/Excel untuk melihat form lengkap.',
+            icon: 'info'
+        });
+    }
 </script>
 <?= $this->endSection(); ?>

@@ -126,6 +126,17 @@ abstract class BaseController extends Controller
             'groups'   => $this->session->get('groups') ?? [],
         ];
 
+        // Access Juri Group if user is Juri
+        if (in_array('juri', $currentUser['groups'])) {
+            $juri = $this->db->table('tbl_munaqosah_juri')
+                             ->select('id_grup_juri')
+                             ->where('user_id', $currentUser['id'])
+                             ->get()
+                             ->getRowArray();
+                             
+            $currentUser['juri_group_id'] = $juri['id_grup_juri'] ?? null;
+        }
+
 
 
         return $currentUser;

@@ -64,6 +64,18 @@ class Juri extends BaseController
             }
         }
 
+        // --- STATS LOGIC ---
+        $totalJuri = count($juriList);
+        $totalGrup = $this->grupMateriModel->countAllResults();
+        
+        // Count Juri per Grup Materi
+        $db = \Config\Database::connect();
+        $builder = $db->table('tbl_munaqosah_juri');
+        $builder->select('tbl_munaqosah_juri.id_grup_materi, tbl_munaqosah_grup_materi.nama_grup_materi, COUNT(*) as jumlah');
+        $builder->join('tbl_munaqosah_grup_materi', 'tbl_munaqosah_grup_materi.id = tbl_munaqosah_juri.id_grup_materi', 'left');
+        $builder->groupBy('tbl_munaqosah_juri.id_grup_materi');
+        $statsGrup = $builder->get()->getResultArray();
+
         $data = [
             'title'      => 'Manajemen Juri',
             'pageTitle'  => 'Data Juri',
@@ -72,7 +84,13 @@ class Juri extends BaseController
                 ['title' => 'Juri', 'url' => ''],
             ],
             'user'       => $this->getCurrentUser(),
-            'juriList'   => $juriList
+            'juriList'   => $juriList,
+            'stats'      => [
+                'total_juri' => $totalJuri,
+                'total_grup' => $totalGrup,
+                'detail_grup'=> $statsGrup
+            ],
+            'grupMateriList' => $this->grupMateriModel->findAll() // For manual form dropdown
         ];
 
         return view('backend/juri/index', $data);
@@ -615,5 +633,144 @@ class Juri extends BaseController
                 'message' => 'Error: ' . $e->getMessage()
             ]);
         }
+    }
+    /**
+     * Generate Manual Form PDF
+     */
+    public function downloadManualFormPdf($idGrupMateri)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('/login');
+        }
+
+        $grupMateri = $this->grupMateriModel->find($idGrupMateri);
+        if (!$grupMateri) {
+            return redirect()->back()->with('error', 'Grup Materi tidak ditemukan');
+        }
+
+        // Get Kriteria
+        $materiModel = new \App\Models\Munaqosah\MateriModel();
+        $kriteriaModel = new \App\Models\Munaqosah\KriteriaModel();
+        
+        $materiList = $materiModel->where('id_grup_materi', $idGrupMateri)->findAll();
+        
+        $headers = [];
+        foreach ($materiList as $m) {
+            $kriteria = $kriteriaModel->where('id_materi', $m['id'])->orderBy('urutan', 'ASC')->findAll();
+            foreach ($kriteria as $k) {
+                $headers[] = $k['nama_kriteria'];
+            }
+        }
+
+        // REMOVED 'NILAI AKHIR' as per user request
+
+        $data = [
+            'grupMateri' => $grupMateri,
+            'headers'    => $headers,
+            'rows'       => 30 // Set to 30 rows per user request
+        ];
+
+        // Generate PDF
+        $dompdf = new \Dompdf\Dompdf();
+        $html = view('backend/juri/pdf_manual_form', $data);
+        
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait'); // Changed to Portrait
+        $dompdf->render();
+        
+        $filename = 'Form_Manual_' . url_title($grupMateri['nama_grup_materi'], '-', true) . '.pdf';
+        
+        $dompdf->stream($filename, ["Attachment" => true]);
+        exit();
+    }
+
+    /**
+     * Generate Manual Form Excel
+     */
+    public function downloadManualFormExcel($idGrupMateri)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('/login');
+        }
+
+        $grupMateri = $this->grupMateriModel->find($idGrupMateri);
+        if (!$grupMateri) {
+            return redirect()->back()->with('error', 'Grup Materi tidak ditemukan');
+        }
+
+        // Get Kriteria
+        $materiModel = new \App\Models\Munaqosah\MateriModel();
+        $kriteriaModel = new \App\Models\Munaqosah\KriteriaModel();
+        
+        $materiList = $materiModel->where('id_grup_materi', $idGrupMateri)->findAll();
+        
+        // Removed 'Nama Peserta'
+        $headers = ['No', 'No Peserta']; 
+        
+        // Add Dynamic Kriteria Headers
+        foreach ($materiList as $m) {
+            $kriteria = $kriteriaModel->where('id_materi', $m['id'])->orderBy('urutan', 'ASC')->findAll();
+            foreach ($kriteria as $k) {
+                $headers[] = $k['nama_kriteria'];
+            }
+        }
+        
+        // Removed 'NILAI AKHIR'
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set Title
+        $sheet->setCellValue('A1', 'FORM PENILAIAN JURI - ' . strtoupper($grupMateri['nama_grup_materi']));
+        // Merge title across columns
+        $lastColIndex = count($headers);
+        $lastColStr = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastColIndex);
+        $sheet->mergeCells("A1:{$lastColStr}1");
+        
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Set Headers
+        $col = 1;
+        foreach ($headers as $h) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col) . '3';
+            $sheet->setCellValue($cell, $h);
+            
+            // Style Header
+            $sheet->getStyle($cell)->getFont()->setBold(true);
+            $sheet->getStyle($cell)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $sheet->getStyle($cell)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFEEEEEE');
+            $sheet->getStyle($cell)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+             $sheet->getStyle($cell)->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+            
+            // Auto width logic
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col))->setAutoSize(true);
+            
+            $col++;
+        }
+
+        // Create Empty Rows
+        $startRow = 4;
+        $numRows = 30; // Matches PDF
+        
+        for ($r = 0; $r < $numRows; $r++) {
+            $currentRow = $startRow + $r;
+            $sheet->setCellValue('A' . $currentRow, $r + 1);
+            
+            for ($c = 1; $c <= count($headers); $c++) {
+                $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c) . $currentRow;
+                $sheet->getStyle($cell)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            }
+        }
+
+        $filename = 'Form_Manual_' . url_title($grupMateri['nama_grup_materi'], '-', true) . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit();
     }
 }
