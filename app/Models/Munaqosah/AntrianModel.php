@@ -150,7 +150,8 @@ class AntrianModel extends Model
                 'room_id' => $roomId,
                 'room_name' => 'Ruang ' . $roomId, // Or 'Grup Juri ' . $roomId
                 'is_active' => !empty($occupant),
-                'occupant' => $occupant
+                'occupant' => $occupant,
+                'id_grup_materi' => $grupMateriId
             ];
         }
 

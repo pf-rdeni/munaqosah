@@ -233,7 +233,7 @@ $(document).ready(function() {
             leftColumns: 2 // Lock No & Nama Peserta
         },
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
-        "dom": 'Bfrtip',
+        "dom": 'lBfrtip',
         "buttons": [
             { extend: 'excelHtml5', title: 'Data Nilai Munaqosah', className: 'btn btn-success btn-sm' },
             { extend: 'pdfHtml5', title: 'Data Nilai Munaqosah', className: 'btn btn-danger btn-sm' },

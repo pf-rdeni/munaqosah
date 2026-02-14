@@ -93,11 +93,15 @@
     <div class="row">
         <?php 
             $roomCount = count($room_status);
+            $roomCount = count($room_status);
             // Dynamic Column Sizing
             $colClass = 'col-md-4'; 
             if($roomCount == 1) $colClass = 'col-md-12';
             elseif($roomCount == 2) $colClass = 'col-md-6';
             elseif($roomCount == 4) $colClass = 'col-md-3';
+
+            // Color Palette for Groups (Avoid: Yellow/Warning, Red/Danger, Green/Success/Olive)
+            $groupColors = ['bg-primary', 'bg-info', 'bg-navy', 'bg-purple', 'bg-pink', 'bg-teal', 'bg-indigo', 'bg-lightblue', 'bg-secondary', 'bg-maroon', 'bg-fuchsia'];
         ?>
         <?php foreach ($room_status as $room): ?>
             <?php 
@@ -172,8 +176,15 @@
             <div class="<?= $colClass ?>">
                 <div class="card <?= $cardClass ?>" style="min-height: 110px; position: relative; overflow: hidden;">
                     <div class="card-body pt-2 pl-2 pr-2 pb-0">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
                             <h5 class="font-weight-bold m-0 <?= $textClass ?>"><?= $room['room_name'] ?></h5>
+                            <?php 
+                                $grupId = $room['id_grup_materi'] ?? 0;
+                                $grupName = $room['nama_grup_materi'] ?? 'Grup';
+                                $colorIndex = $grupId % count($groupColors);
+                                $colorClass = $groupColors[$colorIndex];
+                            ?>
+                             <span class="badge <?= $colorClass ?> shadow-sm mx-1 text-truncate" style="font-size: 0.8rem; max-width: 40%; color: white;" title="<?= $grupName ?>"><?= $grupName ?></span>
                             <span class="badge badge-light <?= $badgeClass ?>"><?= $badgeIcon . $badgeText ?></span>
                         </div>
                         
@@ -276,7 +287,13 @@
                                     </div>
                                 </td>
                                 <td style="vertical-align: middle;">
-                                    <span class="badge badge-primary"><?= esc($a['NamaGrup']) ?></span>
+                                <td style="vertical-align: middle;">
+                                    <?php 
+                                        $grupId = $a['id_grup_materi'] ?? 0;
+                                        $colorIndex = $grupId % count($groupColors);
+                                        $colorClass = $groupColors[$colorIndex];
+                                    ?>
+                                    <span class="badge <?= $colorClass ?>"><?= esc($a['NamaGrup']) ?></span>
                                     <br>
                                     <small class="text-muted"><i class="fas fa-clock mr-1"></i> <?= $a['created_at'] ?></small>
                                 </td>

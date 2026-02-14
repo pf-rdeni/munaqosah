@@ -301,11 +301,27 @@
         let visibleRooms = [];
 
         // 1. First Pass: Collect all visible rooms to count them
+        // Color Palette for Groups
+        // Color Palette for Groups (Avoid: Yellow/Warning, Red/Danger, Green/Success/Olive)
+        const groupColors = ['bg-primary', 'bg-info', 'bg-navy', 'bg-purple', 'bg-pink', 'bg-teal', 'bg-indigo', 'bg-lightblue', 'bg-secondary', 'bg-maroon', 'bg-fuchsia'];
+
         Object.keys(rooms).forEach(groupId => {
             if (filterGrupId && filterGrupId != groupId) return; // Follow filter
             const groupRooms = rooms[groupId];
+
+            // Get Group Name for Room Badge
+            let groupName = 'Grup ' + groupId;
+            const foundGroup = groupMetadata.find(g => g.id == groupId);
+            if(foundGroup && foundGroup.nama_grup_materi) groupName = foundGroup.nama_grup_materi;
+
+            // Assign Color
+            const colorIndex = groupId % groupColors.length;
+            const groupColorClass = groupColors[colorIndex];
+
             if(groupRooms && groupRooms.length > 0) {
                  groupRooms.forEach(room => {
+                     room.groupName = groupName; // Attach group name to room object
+                     room.groupColorClass = groupColorClass; // Attach color
                      visibleRooms.push(room);
                  });
             }
@@ -367,8 +383,9 @@
                 <div class="${colClass} mb-2">
                     <div class="card ${cardClass}" style="min-height: 100px;">
                         <div class="card-body pt-2 pl-2 pr-2 pb-2">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
                                 <h5 class="font-weight-bold m-0 ${textClass}">${room.room_name}</h5>
+                                <span class="badge ${room.groupColorClass} shadow-sm mx-1 text-truncate" style="font-size: 0.8rem; max-width: 40%; color: white;" title="${room.groupName}">${room.groupName}</span>
                                 <span class="badge badge-light ${badgeClass}">${badgeIcon} ${badgeText}</span>
                             </div>
                             <div class="d-flex align-items-center">

@@ -40,12 +40,28 @@ class Antrian extends BaseController
         // If no filter, we might need to loop through all groups or update model to handle null.
         // Let's iterate all groups to get comprehensive room status if no filter.
         $roomStatus = [];
+        // Map group names for quick lookup
+        $groupNames = [];
+        $allGroups = $this->munaqosahGrupModel->findAll();
+        foreach ($allGroups as $g) {
+            $groupNames[$g['id']] = $g['nama_grup_materi'];
+        }
+
         if ($filterGrup) {
-            $roomStatus = $this->antrianModel->getRoomStatus($currentTahunAjaran, $filterGrup);
+            $rs = $this->antrianModel->getRoomStatus($currentTahunAjaran, $filterGrup);
+            // Inject Name
+             foreach ($rs as &$r) { // Key fix: use reference
+                 $r['nama_grup_materi'] = $groupNames[$filterGrup] ?? 'Grup ' . $filterGrup;
+             }
+            $roomStatus = $rs;
         } else {
              // Fetch all groups and merge
-             foreach ($this->munaqosahGrupModel->findAll() as $g) {
+             foreach ($allGroups as $g) {
                  $rs = $this->antrianModel->getRoomStatus($currentTahunAjaran, $g['id']);
+                 // Inject Name
+                 foreach ($rs as &$r) {
+                     $r['nama_grup_materi'] = $g['nama_grup_materi'];
+                 }
                  $roomStatus = array_merge($roomStatus, $rs);
              }
         }
