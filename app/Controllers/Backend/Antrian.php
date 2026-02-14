@@ -214,7 +214,7 @@ class Antrian extends BaseController
         ];
 
         if ($this->antrianModel->insert($data)) {
-            return $this->response->setJSON(['success' => true, 'message' => 'Berhasil ditambahkan ke antrian']);
+            return $this->response->setJSON(['success' => true, 'message' => 'Berhasil ditambahkan ke antrian', 'id_grup' => $idGrup]);
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Gagal menyimpan antrian']);
         }

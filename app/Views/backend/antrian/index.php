@@ -287,7 +287,6 @@
                                     </div>
                                 </td>
                                 <td style="vertical-align: middle;">
-                                <td style="vertical-align: middle;">
                                     <?php 
                                         $grupId = $a['id_grup_materi'] ?? 0;
                                         $colorIndex = $grupId % count($groupColors);
@@ -365,7 +364,13 @@
                              timer: 1000,
                              showConfirmButton: false
                         }).then(() => {
-                            location.reload();
+                            // Gunakan ID Grup dari response server untuk redirect yang akurat
+                            const grupId = response.id_grup;
+                            if (grupId) {
+                                window.location.href = '<?= base_url('backend/antrian') ?>?grup=' + grupId;
+                            } else {
+                                location.reload();
+                            }
                         });
                         $('#input_no_peserta').val('');
                         $('#input_no_peserta').focus();
