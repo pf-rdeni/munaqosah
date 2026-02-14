@@ -88,10 +88,22 @@ class MonitoringNilai extends BaseController
             $dataScores[$np][$mid][$kid][$jid] = $row['nilai'];
         }
 
-        // 4. PERHITUNGAN & KONFIGURASI KOLOM
-        // Tentukan Struktur Kolom yang benar per Materi.
-        // Aturan: Jika ADA Peserta yang memiliki > 1 Juri untuk Materi tertentu, tampilkan Multi-Kolom.
-        
+        // 4. PERHITUNGAN: Tentukan Jumlah Juri Maksimal per Materi (dibutuhkan untuk cek kelengkapan)
+        $materiColumns = [];
+        foreach ($structure as $mid => $mData) {
+            $maxJuri = 1;
+            foreach ($dataScores as $np => $mats) {
+                if (isset($mats[$mid])) {
+                    foreach ($mats[$mid] as $kid => $jvals) {
+                        $c = count($jvals);
+                        if ($c > $maxJuri) $maxJuri = $c;
+                    }
+                }
+            }
+            $materiColumns[$mid] = $maxJuri;
+        }
+
+        // 5. PERHITUNGAN & KONFIGURASI KOLOM
         $finalData = [];
         
         foreach ($pesertaList as $p) {
@@ -104,6 +116,7 @@ class MonitoringNilai extends BaseController
                 // Logika Perhitungan per Materi
                 $mInfo = $mData['info'];
                 $isPengurangan = ($mInfo['kondisional_set'] == 'nilai_pengurangan');
+                $expectedJuri = $materiColumns[$mid] ?? 1;
                 
                 $materiSubtotal = 0;
                 $kriteriaResults = [];
@@ -116,9 +129,14 @@ class MonitoringNilai extends BaseController
                         $vals = $mScores[$kid] ?? []; // Daftar Nilai Juri
                                                 
                         if (empty($vals)) {
-                            $isComplete = false; // Nilai hilang
+                            $isComplete = false; // Nilai hilang total
                             $kriteriaResults[$kid] = ['avg' => 0, 'bb' => 0, 'raw' => []];
                             continue;
+                        }
+
+                        // Cek apakah semua juri yang diharapkan sudah menilai
+                        if (count($vals) < $expectedJuri) {
+                            $isComplete = false; // Belum semua juri menilai
                         }
 
                         // Hitung Rata-Rata
@@ -176,22 +194,6 @@ class MonitoringNilai extends BaseController
             } else {
                 $finalData[$np]['status'] = ($finalData[$np]['rata_rata'] >= 65) ? 'LULUS' : 'TDK LULUS';
             }
-        }
-
-        // Tentukan Jumlah Juri Maksimal per Materi (untuk render Header)
-        // Kita iterasi semua peserta untuk mencari jumlah juri maksimal
-        $materiColumns = [];
-        foreach ($structure as $mid => $mData) {
-            $maxJuri = 1;
-            foreach ($dataScores as $np => $mats) {
-                if (isset($mats[$mid])) {
-                    foreach ($mats[$mid] as $kid => $jvals) {
-                        $c = count($jvals);
-                        if ($c > $maxJuri) $maxJuri = $c;
-                    }
-                }
-            }
-            $materiColumns[$mid] = $maxJuri;
         }
 
         $data = [
