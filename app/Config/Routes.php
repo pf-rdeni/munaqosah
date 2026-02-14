@@ -142,6 +142,7 @@ $routes->group('backend', ['namespace' => 'App\Controllers\Backend'], static fun
 
     // Monitoring Nilai
     $routes->get('monitoring/nilai', 'Munaqosah\MonitoringNilai::index');
+    $routes->get('monitoring/grup-juri', 'Munaqosah\MonitoringGrupJuri::index');
 
     // Input Nilai (Juri)
     $routes->get('munaqosah/input-nilai', 'Munaqosah\InputNilai::index');

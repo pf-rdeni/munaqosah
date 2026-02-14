@@ -372,6 +372,85 @@
 
 <?php endif; ?>
 
+<!-- Monitoring Grup Juri Card (Juri Only) -->
+<?php if (in_array('juri', $groups) && !empty($grupJuriMonitoring)): ?>
+<?php
+    $gjm = $grupJuriMonitoring;
+    $juriNames = array_map(function($j) { return $j['nama_juri']; }, $gjm['juris']);
+?>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-outline <?= $gjm['countBelum'] > 0 ? 'card-warning' : 'card-success' ?> collapsed-card" id="cardGrupJuriMonitoring">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-users-cog mr-2"></i>
+                    Monitoring Grup Juri <?= $gjm['grupId'] ?>
+                    <span class="badge badge-light ml-2"><?= esc($gjm['grupMateriName']) ?></span>
+                    <small class="text-muted ml-2">Juri: <strong><?= esc(implode(', ', $juriNames)) ?></strong></small>
+                </h3>
+                <div class="card-tools">
+                    <span class="badge badge-success mr-1" title="Lengkap"><i class="fas fa-check"></i> <?= $gjm['countLengkap'] ?></span>
+                    <span class="badge badge-warning mr-1" title="Belum Lengkap"><i class="fas fa-exclamation"></i> <?= $gjm['countBelum'] ?></span>
+                    <span class="badge badge-info mr-1" title="Total"><i class="fas fa-users"></i> <?= $gjm['totalPeserta'] ?></span>
+                    <span class="badge badge-light" id="gjmRefreshCountdown" title="Auto refresh"></span>
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
+                    <button type="button" class="btn btn-tool" data-card-widget="remove"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-2" style="display: none;">
+                <?php if (empty($gjm['matrix'])): ?>
+                    <p class="text-muted text-center py-3">Belum ada peserta yang dinilai oleh grup ini.</p>
+                <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover table-sm text-sm" id="tblGrupJuriDashboard" style="width:100%">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center" width="40">No</th>
+                                <th class="text-center" width="120">No Peserta</th>
+                                <th style="min-width: 180px;">Nama Peserta</th>
+                                <?php foreach ($gjm['juris'] as $j): ?>
+                                <th class="text-center" style="min-width: 130px;">
+                                    <i class="fas fa-gavel mr-1 text-muted"></i>
+                                    <?= esc($j['nama_juri']) ?>
+                                </th>
+                                <?php endforeach; ?>
+                                <th class="text-center" width="140">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $no = 1; foreach ($gjm['matrix'] as $np => $mRow): ?>
+                            <tr class="<?= !$mRow['complete'] ? 'table-warning' : '' ?>">
+                                <td class="text-center"><?= $no++ ?></td>
+                                <td class="text-center font-weight-bold"><?= esc($np) ?></td>
+                                <td><?= esc($mRow['nama']) ?></td>
+                                <?php foreach ($gjm['juris'] as $j): ?>
+                                <td class="text-center">
+                                    <?php if ($mRow['scores'][$j['id']]): ?>
+                                        <span class="badge badge-success" style="font-size: 1rem;"><i class="fas fa-check"></i></span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger" style="font-size: 1rem;"><i class="fas fa-times"></i></span>
+                                    <?php endif; ?>
+                                </td>
+                                <?php endforeach; ?>
+                                <td class="text-center">
+                                    <?php if ($mRow['complete']): ?>
+                                        <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Lengkap</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-warning"><i class="fas fa-exclamation-triangle mr-1"></i> Belum Lengkap</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- List Penilaian Juri -->
 <?php if (!empty($listDinilai)): ?>
 <div class="row">
@@ -507,5 +586,71 @@
             }
         })
     })
+</script>
+<script>
+// --- Dashboard: Monitoring Grup Juri Auto Refresh ---
+$(function() {
+    var $card = $('#cardGrupJuriMonitoring');
+    if ($card.length === 0) return;
+
+    var GJM_INTERVAL = 30000;
+
+    // Init DataTable
+    if ($('#tblGrupJuriDashboard').length && !$.fn.DataTable.isDataTable('#tblGrupJuriDashboard')) {
+        $('#tblGrupJuriDashboard').DataTable({
+            "paging": false, "searching": true, "ordering": true, "info": false,
+            "autoWidth": false, "responsive": true,
+            "language": { "search": "Cari:", "zeroRecords": "Tidak ada data" }
+        });
+    }
+
+    // Auto refresh
+    setInterval(function() {
+        var isCollapsed = $card.hasClass('collapsed-card');
+        $.ajax({
+            url: window.location.href,
+            type: 'GET',
+            dataType: 'html',
+            success: function(resp) {
+                var $new = $(resp).find('#cardGrupJuriMonitoring');
+                if ($new.length) {
+                    var scrollTop = $(window).scrollTop();
+                    // Update card body & header badges
+                    $card.find('.card-body').html($new.find('.card-body').html());
+                    $card.find('.card-tools .badge-success').first().html($new.find('.card-tools .badge-success').first().html());
+                    $card.find('.card-tools .badge-warning').first().html($new.find('.card-tools .badge-warning').first().html());
+                    $card.find('.card-tools .badge-info').first().html($new.find('.card-tools .badge-info').first().html());
+
+                    // Re-init DataTable
+                    if ($('#tblGrupJuriDashboard').length && !$.fn.DataTable.isDataTable('#tblGrupJuriDashboard')) {
+                        $('#tblGrupJuriDashboard').DataTable({
+                            "paging": false, "searching": true, "ordering": true, "info": false,
+                            "autoWidth": false, "responsive": true,
+                            "language": { "search": "Cari:", "zeroRecords": "Tidak ada data" }
+                        });
+                    }
+
+                    // Restore collapse state
+                    if (isCollapsed && !$card.hasClass('collapsed-card')) {
+                        $card.find('.card-body').hide();
+                        $card.addClass('collapsed-card');
+                    } else if (!isCollapsed && $card.hasClass('collapsed-card')) {
+                        $card.find('.card-body').show();
+                        $card.removeClass('collapsed-card');
+                    }
+                    $(window).scrollTop(scrollTop);
+                }
+            }
+        });
+    }, GJM_INTERVAL);
+
+    // Countdown
+    var countdown = GJM_INTERVAL / 1000;
+    setInterval(function() {
+        countdown--;
+        if (countdown <= 0) countdown = GJM_INTERVAL / 1000;
+        $('#gjmRefreshCountdown').html('<i class="fas fa-clock mr-1"></i>' + countdown + 's');
+    }, 1000);
+});
 </script>
 <?= $this->endSection(); ?>

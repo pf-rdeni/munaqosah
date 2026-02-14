@@ -285,6 +285,87 @@ class Dashboard extends BaseController
 
                      $listDinilai[$i]['lama_ujian'] = $duration;
                  }
+
+                 // --- Monitoring Grup Juri untuk Dashboard ---
+                 if (!empty($juriData['id_grup_juri'])) {
+                     $grupJuriId = $juriData['id_grup_juri'];
+
+                     // Ambil juri dalam grup yang sama
+                     $grupJuris = $this->juriModel
+                         ->select('tbl_munaqosah_juri.*, gm.nama_grup_materi')
+                         ->join('tbl_munaqosah_grup_materi gm', 'gm.id = tbl_munaqosah_juri.id_grup_materi', 'left')
+                         ->where('tbl_munaqosah_juri.id_grup_juri', $grupJuriId)
+                         ->orderBy('tbl_munaqosah_juri.nama_juri', 'ASC')
+                         ->findAll();
+
+                     // Ambil skor unik per juri per peserta
+                     $grupScores = $this->nilaiModel
+                         ->distinct()
+                         ->select('no_peserta, id_juri, id_grup_juri')
+                         ->where('tahun_ajaran', $tahunAjaran)
+                         ->where('id_grup_juri', $grupJuriId)
+                         ->findAll();
+
+                     $juriPesertaMap = [];
+                     foreach ($grupScores as $gs) {
+                         $juriPesertaMap[$gs['id_juri']][$gs['no_peserta']] = true;
+                     }
+
+                     // Kumpulkan semua peserta
+                     $allPesertaInGrup = [];
+                     foreach ($grupJuris as $gj) {
+                         if (isset($juriPesertaMap[$gj['id']])) {
+                             foreach (array_keys($juriPesertaMap[$gj['id']]) as $np) {
+                                 $allPesertaInGrup[$np] = true;
+                             }
+                         }
+                     }
+
+                     // Peserta name map
+                     $db = \Config\Database::connect();
+                     $pesertaInfo = $db->table('tbl_munaqosah_peserta p')
+                         ->select('p.no_peserta, s.nama_siswa')
+                         ->join('tbl_munaqosah_siswa s', 's.nisn = p.nisn AND s.tahun_ajaran = p.tahun_ajaran', 'left')
+                         ->where('p.tahun_ajaran', $tahunAjaran)
+                         ->get()->getResultArray();
+                     $pesertaNameMap = [];
+                     foreach ($pesertaInfo as $pi) {
+                         $pesertaNameMap[$pi['no_peserta']] = $pi['nama_siswa'];
+                     }
+
+                     $pesertaList = array_keys($allPesertaInGrup);
+                     sort($pesertaList);
+
+                     $matrix = [];
+                     $gjCountLengkap = 0;
+                     $gjCountBelum = 0;
+                     foreach ($pesertaList as $np) {
+                         $row = [];
+                         $isComplete = true;
+                         foreach ($grupJuris as $gj) {
+                             $sudahNilai = isset($juriPesertaMap[$gj['id']][$np]);
+                             $row[$gj['id']] = $sudahNilai;
+                             if (!$sudahNilai) $isComplete = false;
+                         }
+                         $matrix[$np] = [
+                             'scores' => $row,
+                             'complete' => $isComplete,
+                             'nama' => $pesertaNameMap[$np] ?? '-'
+                         ];
+                         if ($isComplete) $gjCountLengkap++;
+                         else $gjCountBelum++;
+                     }
+
+                     $grupJuriMonitoring = [
+                         'grupId' => $grupJuriId,
+                         'juris' => $grupJuris,
+                         'matrix' => $matrix,
+                         'totalPeserta' => count($pesertaList),
+                         'countLengkap' => $gjCountLengkap,
+                         'countBelum' => $gjCountBelum,
+                         'grupMateriName' => $grupJuris[0]['nama_grup_materi'] ?? '-',
+                     ];
+                 }
              }
         }
 
@@ -302,6 +383,7 @@ class Dashboard extends BaseController
             'rubrikData'   => $rubrikData, // Pass dynamic rubric
             'predikats'    => $predikats,  // Pass predikats
             'juriComparison' => $juriComparison ?? null, // Data Statistik Juri
+            'grupJuriMonitoring' => $grupJuriMonitoring ?? null, // Monitoring Grup Juri
             'statistik'    => [
                 'totalSiswa'      => $this->siswaModel->countSiswaByStatus('aktif', $tahunAjaran),
                 'totalPeserta'    => $totalPeserta,
