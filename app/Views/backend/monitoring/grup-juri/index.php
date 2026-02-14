@@ -99,7 +99,7 @@
                             <select id="filterGrupJuri" class="form-control form-control-sm">
                                 <option value="">-- Semua Grup Juri --</option>
                                 <?php foreach ($grupData as $gId => $gd): ?>
-                                    <option value="<?= $gId ?>">Grup <?= $gId ?></option>
+                                    <option value="<?= $gId ?>" data-grup-materi="<?= $gd['grupMateriId'] ?>">Grup <?= $gId ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -231,33 +231,91 @@ $(document).ready(function() {
     var LS_KEY = 'monitoringGrupJuri_filters';
     var AUTO_REFRESH_INTERVAL = 30000; // 30 detik
 
-    // Init DataTables
-    $('.tbl-grup-juri').each(function() {
-        $(this).DataTable({
-            "paging": false,
-            "searching": true,
-            "ordering": true,
-            "info": false,
-            "autoWidth": false,
-            "responsive": true,
-            "language": {
-                "search": "Cari:",
-                "zeroRecords": "Tidak ada data ditemukan",
+    // ============================================================
+    // INIT DATATABLES
+    // ============================================================
+    function initDataTables() {
+        $('.tbl-grup-juri').each(function() {
+            if (!$.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable({
+                    "paging": false,
+                    "searching": true,
+                    "ordering": true,
+                    "info": false,
+                    "autoWidth": false,
+                    "responsive": true,
+                    "language": {
+                        "search": "Cari:",
+                        "zeroRecords": "Tidak ada data ditemukan",
+                    }
+                });
             }
         });
-    });
+    }
+    initDataTables();
 
-    // --- LocalStorage: Restore filters ---
-    function restoreFilters() {
-        try {
-            var saved = JSON.parse(localStorage.getItem(LS_KEY));
-            if (saved) {
-                if (saved.materi) $('#filterGrupMateri').val(saved.materi);
-                if (saved.juri) $('#filterGrupJuri').val(saved.juri);
-                if (saved.status) $('#filterStatus').val(saved.status);
-                applyFilters();
+    // ============================================================
+    // CASCADING FILTER: Grup Materi -> Grup Juri
+    // ============================================================
+    function updateGrupJuriOptions(selectedMateri) {
+        var $filterJuri = $('#filterGrupJuri');
+
+        // Tampilkan/sembunyikan opsi berdasarkan grup materi yang dipilih
+        $filterJuri.find('option').each(function() {
+            var $opt = $(this);
+            var optVal = $opt.val();
+            if (optVal === '') {
+                // "Semua" selalu tampil
+                $opt.show().prop('disabled', false);
+                return;
             }
-        } catch(e) {}
+            if (!selectedMateri) {
+                // Tidak ada filter materi, tampilkan semua opsi
+                $opt.show().prop('disabled', false);
+            } else {
+                // Cek apakah opsi ini cocok dengan grup materi yang dipilih
+                var optGrupMateri = String($opt.attr('data-grup-materi') || '');
+                if (optGrupMateri === String(selectedMateri)) {
+                    $opt.show().prop('disabled', false);
+                } else {
+                    $opt.hide().prop('disabled', true);
+                }
+            }
+        });
+
+        // Jika nilai sekarang tersembunyi/disabled, reset ke "Semua"
+        var $selected = $filterJuri.find('option:selected');
+        if ($selected.length && $selected.prop('disabled')) {
+            $filterJuri.val('');
+        }
+    }
+
+    // ============================================================
+    // FILTER LOGIC — gunakan attr() bukan data() agar string compare konsisten
+    // ============================================================
+    function applyFilters() {
+        var filterMateri = String($('#filterGrupMateri').val() || '');
+        var filterJuri   = String($('#filterGrupJuri').val() || '');
+        var filterStatus = String($('#filterStatus').val() || '');
+
+        $('.grup-juri-card').each(function() {
+            var card = $(this);
+            var cardMateri = String(card.attr('data-grup-materi') || '');
+            var cardJuri   = String(card.attr('data-grup-juri') || '');
+            var cardStatus = String(card.attr('data-status') || '');
+
+            var matchMateri = !filterMateri || cardMateri === filterMateri;
+            var matchJuri   = !filterJuri   || cardJuri === filterJuri;
+            var matchStatus = !filterStatus || cardStatus === filterStatus;
+
+            if (matchMateri && matchJuri && matchStatus) {
+                card.show();
+            } else {
+                card.hide();
+            }
+        });
+
+        saveFilters();
     }
 
     // --- LocalStorage: Save filters ---
@@ -270,75 +328,78 @@ $(document).ready(function() {
         localStorage.setItem(LS_KEY, JSON.stringify(data));
     }
 
-    // Filter logic
-    function applyFilters() {
-        var filterMateri = $('#filterGrupMateri').val();
-        var filterJuri = $('#filterGrupJuri').val();
-        var filterStatus = $('#filterStatus').val();
-
-        $('.grup-juri-card').each(function() {
-            var card = $(this);
-            var matchMateri = !filterMateri || card.data('grup-materi') == filterMateri;
-            var matchJuri = !filterJuri || card.data('grup-juri') == filterJuri;
-            var matchStatus = !filterStatus || card.data('status') == filterStatus;
-
-            if (matchMateri && matchJuri && matchStatus) {
-                card.show();
-            } else {
-                card.hide();
+    // --- LocalStorage: Restore filters ---
+    function restoreFilters() {
+        try {
+            var saved = JSON.parse(localStorage.getItem(LS_KEY));
+            if (saved) {
+                if (saved.materi) {
+                    $('#filterGrupMateri').val(saved.materi);
+                    updateGrupJuriOptions(saved.materi);
+                }
+                if (saved.juri) $('#filterGrupJuri').val(saved.juri);
+                if (saved.status) $('#filterStatus').val(saved.status);
+                applyFilters();
             }
-        });
-
-        saveFilters();
+        } catch(e) {}
     }
 
-    $('#filterGrupMateri, #filterGrupJuri, #filterStatus').on('change', applyFilters);
+    // ============================================================
+    // EVENT HANDLERS — delegated agar tetap aktif setelah auto-refresh
+    // ============================================================
+    $(document).on('change', '#filterGrupMateri', function() {
+        var val = $(this).val();
+        // Cascade: update opsi Grup Juri berdasarkan Grup Materi
+        updateGrupJuriOptions(val);
+        applyFilters();
+    });
 
-    $('#btnResetFilter').on('click', function() {
+    $(document).on('change', '#filterGrupJuri', function() {
+        applyFilters();
+    });
+
+    $(document).on('change', '#filterStatus', function() {
+        applyFilters();
+    });
+
+    $(document).on('click', '#btnResetFilter', function() {
         $('#filterGrupMateri').val('');
         $('#filterGrupJuri').val('');
         $('#filterStatus').val('');
+        updateGrupJuriOptions('');
         $('.grup-juri-card').show();
         localStorage.removeItem(LS_KEY);
     });
 
-    // Restore filter saat halaman dimuat
+    // Restore filters pada halaman dimuat
     restoreFilters();
 
-    // --- Auto Refresh Background ---
+    // ============================================================
+    // AUTO REFRESH BACKGROUND
+    // ============================================================
     var refreshTimer = setInterval(function() {
         $.ajax({
             url: window.location.href,
             type: 'GET',
             dataType: 'html',
             success: function(response) {
-                // Parse response dan ambil konten card-body utama
                 var $newContent = $(response);
                 var $newCardBody = $newContent.find('.card-primary .card-body');
                 if ($newCardBody.length) {
-                    // Simpan scroll position
                     var scrollTop = $(window).scrollTop();
+
+                    // Destroy DataTables sebelum replace DOM
+                    $('.tbl-grup-juri').each(function() {
+                        if ($.fn.DataTable.isDataTable(this)) {
+                            $(this).DataTable().destroy();
+                        }
+                    });
 
                     // Replace konten
                     $('.card-primary .card-body').html($newCardBody.html());
 
                     // Re-init DataTables
-                    $('.tbl-grup-juri').each(function() {
-                        if (!$.fn.DataTable.isDataTable(this)) {
-                            $(this).DataTable({
-                                "paging": false,
-                                "searching": true,
-                                "ordering": true,
-                                "info": false,
-                                "autoWidth": false,
-                                "responsive": true,
-                                "language": {
-                                    "search": "Cari:",
-                                    "zeroRecords": "Tidak ada data ditemukan",
-                                }
-                            });
-                        }
-                    });
+                    initDataTables();
 
                     // Re-apply filters & restore scroll
                     restoreFilters();
