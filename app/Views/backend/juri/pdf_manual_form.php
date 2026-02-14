@@ -72,5 +72,41 @@
             <?php endfor; ?>
         </tbody>
     </table>
+
+    <?php if(!empty($useAttachment) && $useAttachment): ?>
+        <div style="page-break-before: always;"></div>
+
+        <div class="header">
+            <h2>LAMPIRAN: <?= $attachmentTitle ?></h2>
+            <p>Grup Materi: <strong><?= strtoupper($grupMateri['nama_grup_materi']) ?></strong></p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="no-col">No</th>
+                    <th class="peserta-col">No Peserta</th>
+                    <th>Nama Peserta</th>
+                    <th>Materi / Surah Undian</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if(!empty($attachmentData)): ?>
+                    <?php $no = 1; foreach($attachmentData as $d): ?>
+                    <tr>
+                        <td class="text-center"><?= $no++ ?></td>
+                        <td class="text-center"><?= $d['no_peserta'] ?></td>
+                        <td><?= strtoupper($d['nama_siswa']) ?></td>
+                        <td><?= $d['materi'] ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="4" class="text-center">Belum ada data peserta undian.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 </body>
 </html>

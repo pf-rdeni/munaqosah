@@ -662,12 +662,109 @@ class Juri extends BaseController
             }
         }
 
-        // REMOVED 'NILAI AKHIR' as per user request
+        $headers[] = 'NILAI AKHIR'; // Logic remains
+
+        $useAttachment = false;
+        $attachmentTitle = '';
+        $attachmentData = [];
+
+        // Check for specific groups that need attachment (Tahfidz, Praktek Sholat)
+        if (stripos($grupMateri['nama_grup_materi'], 'Tahfidz') !== false) {
+            $useAttachment = true;
+            $attachmentTitle = 'DAFTAR UNDIAN SURAH / MAQRO (TAHFIDZ)';
+        } elseif (stripos($grupMateri['nama_grup_materi'], 'Praktek Sholat') !== false) {
+            $useAttachment = true;
+            $attachmentTitle = 'DAFTAR BACAAN SHOLAT / UNDIAN';
+        }
+
+        if ($useAttachment) {
+            $pesertaModel = new \App\Models\Munaqosah\PesertaModel();
+            $alquranModel = new \App\Models\Munaqosah\TblAlquranModel();
+            $tahunAjaran = $this->getTahunAjaran();
+
+            // Load & Parse Quran Pages JSON
+            $jsonPath = FCPATH . 'assets/quran/mushaf_pages_complete.json';
+            $surahPageMap = [];
+            if (file_exists($jsonPath)) {
+                $pagesData = json_decode(file_get_contents($jsonPath), true);
+                if ($pagesData) {
+                    // Build Surah -> Page Map (First page where surah appears starting with verse 1, or just first appearance)
+                    // We iterate through pages 1 to 604 (keys are strings)
+                    foreach ($pagesData as $pageNo => $info) {
+                        if (!isset($info['verses'])) continue;
+                        foreach ($info['verses'] as $v) {
+                            $sId = $v['surah'];
+                            // If we haven't found a page for this surah yet, OR if this page contains verse 1
+                            if (!isset($surahPageMap[$sId]) || $v['from'] == 1) {
+                                $surahPageMap[$sId] = $pageNo;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fetch Peserta with Siswa Name
+            $pesertaList = $pesertaModel
+                ->select('tbl_munaqosah_peserta.*, s.nama_siswa')
+                ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'left')
+                ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
+                ->orderBy('no_peserta', 'ASC')
+                ->findAll();
+
+            foreach ($pesertaList as $p) {
+                $materiText = '-';
+                $surahData = json_decode($p['surah'] ?? '{}', true);
+                
+                if (stripos($grupMateri['nama_grup_materi'], 'Tahfidz') !== false) {
+                    // TAHFIDZ LOGIC
+                    $wajib = [];
+                    if (!empty($surahData['tahfidz_wajib'])) {
+                        foreach ($surahData['tahfidz_wajib'] as $sNo) {
+                            $s = $alquranModel->where('no_surah', $sNo)->first();
+                            if ($s) {
+                                $halaman = $surahPageMap[$sNo] ?? '-';
+                                $wajib[] = "{$s['nama_surah']} (QS: {$s['no_surah']}, Hal: {$halaman}, Juz: {$s['juz']})";
+                            }
+                        }
+                    }
+                    
+                    $pilihan = '-';
+                    if (!empty($surahData['tahfidz_pilihan'])) {
+                        if (is_numeric($surahData['tahfidz_pilihan'])) {
+                             $s = $alquranModel->where('no_surah', $surahData['tahfidz_pilihan'])->first();
+                             $halaman = $s ? ($surahPageMap[$s['no_surah']] ?? '-') : '-';
+                             $pilihan = $s ? "{$s['nama_surah']} (QS: {$s['no_surah']}, Hal: {$halaman}, Juz: {$s['juz']})" : $surahData['tahfidz_pilihan'];
+                        } else {
+                            $pilihan = $surahData['tahfidz_pilihan'];
+                        }
+                    }
+
+                    $materiText = "<strong>Wajib:</strong> <br>" . implode('<br>', $wajib) . "<br><br><strong>Pilihan:</strong> <br>" . $pilihan;
+                
+                } elseif (stripos($grupMateri['nama_grup_materi'], 'Praktek Sholat') !== false) {
+                    // PRAKTEK SHOLAT LOGIC
+                    if (!empty($surahData['surah_sholat'])) {
+                        $s = $alquranModel->where('no_surah', $surahData['surah_sholat'])->first();
+                        $halaman = $s ? ($surahPageMap[$s['no_surah']] ?? '-') : '-';
+                        $materiText = $s ? "{$s['nama_surah']} (QS: {$s['no_surah']}, Hal: {$halaman}, Juz: {$s['juz']})" : '-';
+                    }
+                }
+
+                $attachmentData[] = [
+                    'no_peserta' => $p['no_peserta'],
+                    'nama_siswa' => $p['nama_siswa'],
+                    'materi' => $materiText
+                ];
+            }
+        }
 
         $data = [
             'grupMateri' => $grupMateri,
             'headers'    => $headers,
-            'rows'       => 30 // Set to 30 rows per user request
+            'rows'       => 30, 
+            'useAttachment' => $useAttachment,
+            'attachmentTitle' => $attachmentTitle,
+            'attachmentData' => $attachmentData
         ];
 
         // Generate PDF
@@ -675,7 +772,7 @@ class Juri extends BaseController
         $html = view('backend/juri/pdf_manual_form', $data);
         
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait'); // Changed to Portrait
+        $dompdf->setPaper('A4', 'portrait'); 
         $dompdf->render();
         
         $filename = 'Form_Manual_' . url_title($grupMateri['nama_grup_materi'], '-', true) . '.pdf';
