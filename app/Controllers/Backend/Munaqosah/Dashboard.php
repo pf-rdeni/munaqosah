@@ -101,21 +101,35 @@ class Dashboard extends BaseController
             ];
         }
 
-        // 2. Ambil Semua Skor
+        // 2. Ambil Semua Skor (termasuk info juri, sama seperti MonitoringNilai)
         $rawScores = $this->nilaiModel->where('tahun_ajaran', $tahunAjaran)->findAll();
         
-        // Organize Scores: $dataScores[NoPeserta][MateriID][KriteriaID] = Count/Array
-        // Gunakan struktur yang efisien untuk checking
+        // Organize Scores: $dataScores[NoPeserta][MateriID][KriteriaID][JuriID] = true
+        // Track per-juri scores to check multi-juri completeness
         $dataScores = [];
         foreach ($rawScores as $row) {
-             // Mark as exists
-             $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']] = true;
+             $dataScores[$row['no_peserta']][$row['id_materi']][$row['id_kriteria']][$row['id_juri']] = true;
+        }
+
+        // 2b. Hitung jumlah juri maksimal per materi (sama seperti MonitoringNilai)
+        $materiColumns = [];
+        foreach ($structure as $mid => $mData) {
+            $maxJuri = 1;
+            foreach ($dataScores as $np => $mats) {
+                if (isset($mats[$mid])) {
+                    foreach ($mats[$mid] as $kid => $jvals) {
+                        $c = count($jvals);
+                        if ($c > $maxJuri) $maxJuri = $c;
+                    }
+                }
+            }
+            $materiColumns[$mid] = $maxJuri;
         }
 
         // 3. Ambil Semua Peserta Aktif
         $allPeserta = $this->pesertaModel->where('tahun_ajaran', $tahunAjaran)->findAll();
 
-        // 4. Hitung Status per Peserta
+        // 4. Hitung Status per Peserta (logika sama persis dengan MonitoringNilai)
         $countBelum   = 0;
         $countProgres = 0;
         $countSelesai = 0;
@@ -129,14 +143,21 @@ class Dashboard extends BaseController
                 // Ignore Empty Materi (if any)
                 if (empty($mData['kriteria'])) continue;
 
+                $expectedJuri = $materiColumns[$mid] ?? 1;
+
                 if (isset($dataScores[$np][$mid])) {
                     $mScores = $dataScores[$np][$mid];
                     foreach ($mData['kriteria'] as $k) {
                         $kid = $k['id'];
-                        if (!isset($mScores[$kid])) {
+                        $vals = $mScores[$kid] ?? [];
+                        if (empty($vals)) {
                             $isComplete = false;
                         } else {
                             $hasAnyScore = true;
+                            // Cek apakah semua juri yang diharapkan sudah menilai
+                            if (count($vals) < $expectedJuri) {
+                                $isComplete = false;
+                            }
                         }
                     }
                 } else {
