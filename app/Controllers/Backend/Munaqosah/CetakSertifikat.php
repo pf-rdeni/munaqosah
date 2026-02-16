@@ -12,6 +12,7 @@ use App\Models\Munaqosah\PredikatModel;
 use App\Models\Backend\SertifikatTemplateModel;
 use App\Models\Backend\SertifikatFieldModel;
 use App\Helpers\CertificateGenerator;
+use App\Controllers\PublicSertifikat;
 use ZipStream\ZipStream;
 
 class CetakSertifikat extends BaseController
@@ -59,7 +60,7 @@ class CetakSertifikat extends BaseController
 
         // 2. Get Peserta
         $pesertaList = $this->pesertaModel
-            ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.nisn as real_nisn')
+            ->select('tbl_munaqosah_peserta.*, s.nama_siswa, s.nisn as real_nisn, s.nis, s.no_hp, s.foto')
             ->join('tbl_munaqosah_siswa s', 's.nisn = tbl_munaqosah_peserta.nisn AND s.tahun_ajaran = tbl_munaqosah_peserta.tahun_ajaran', 'inner')
             ->where('tbl_munaqosah_peserta.tahun_ajaran', $tahunAjaran)
             ->orderBy('no_peserta', 'ASC')
@@ -130,8 +131,9 @@ class CetakSertifikat extends BaseController
         // Calculate Nilai Huruf & Predikat Label
         $nilaiHuruf = '-';
         $predikatLabel = '-';
+        $roundedScore = ceil($avgScore);
         foreach ($globalPredikats as $pred) {
-            if ($avgScore >= $pred['min_nilai'] && $avgScore <= $pred['max_nilai']) {
+            if ($roundedScore >= $pred['min_nilai'] && $roundedScore <= $pred['max_nilai']) {
                 $nilaiHuruf = $pred['predikat_huruf'] ?? '-';
                 $predikatLabel = $pred['nama_predikat'];
                 break;
@@ -143,35 +145,58 @@ class CetakSertifikat extends BaseController
             // Status & Ranking helper
             $finalData[$np]['status'] = (!$isComplete) ? 'BELUM LENGKAP' : (($finalData[$np]['rata_rata'] >= 65) ? 'LULUS' : 'TDK LULUS');
             $finalData[$np]['is_complete'] = $isComplete;
+
+            // Generate public certificate link
+            if ($isComplete && $finalData[$np]['status'] == 'LULUS') {
+                $nisn = $p['real_nisn'] ?? $p['nisn'] ?? '';
+                $finalData[$np]['sertifikat_link'] = PublicSertifikat::generateLink($p['id'], $nisn, $tahunAjaran);
+            } else {
+                $finalData[$np]['sertifikat_link'] = null;
+            }
         }
 
         // 5. Ranking Logic
         // Filters only Complete & Passed for Ranking? Or all? Usually all completed.
         // Let's rank everyone based on Grand Total DESC
         
-        // Convert to array for sorting
-        $sortable = [];
-        foreach ($pesertaList as $p) {
-            $np = $p['no_peserta'];
-            $sortable[] = [
-                'no_peserta' => $np,
-                'grand_total' => $finalData[$np]['grand_total'],
-                'is_complete' => $finalData[$np]['is_complete']
-            ];
+
+
+        // Find Tahfidz ID for priority sorting
+        $idTahfidz = null;
+        foreach ($allMateri as $m) {
+            if (stripos($m['nama_materi'], 'Tahfidz') !== false) {
+                $idTahfidz = $m['id'];
+                break;
+            }
         }
 
-        // Sort DESC
-        usort($sortable, function($a, $b) {
-            return $b['grand_total'] <=> $a['grand_total'];
+        // Sort Peserta List by Rank (Grand Total DESC -> Tahfidz DESC -> Name ASC)
+        usort($pesertaList, function($a, $b) use ($finalData, $idTahfidz) {
+            $scoreA = $finalData[$a['no_peserta']]['grand_total'] ?? 0;
+            $scoreB = $finalData[$b['no_peserta']]['grand_total'] ?? 0;
+            
+            // Prioritize higher score
+            if ($scoreA < $scoreB) return 1;
+            if ($scoreA > $scoreB) return -1;
+
+            // If Grand Total is equal, check Tahfidz
+            if ($idTahfidz) {
+                $tahfidzA = $finalData[$a['no_peserta']][$idTahfidz] ?? 0;
+                $tahfidzB = $finalData[$b['no_peserta']][$idTahfidz] ?? 0;
+                
+                if ($tahfidzA < $tahfidzB) return 1;
+                if ($tahfidzA > $tahfidzB) return -1;
+            }
+
+            // Fallback: Name ASC
+            return strnatcmp($a['nama_siswa'], $b['nama_siswa']);
         });
 
-        // Assign Rank
+        // Assign Rank based on sorted list
         $rankMap = [];
         $currentRank = 1;
-        foreach ($sortable as $s) {
-            // Rank only valid for completed? 
-            // For now, rank everything
-            $rankMap[$s['no_peserta']] = $currentRank++;
+        foreach ($pesertaList as $p) {
+            $rankMap[$p['no_peserta']] = $currentRank++;
         }
 
         $data = [
@@ -586,6 +611,7 @@ class CetakSertifikat extends BaseController
 
     private function getPredikatByScore($score, $predikats, $field = 'nama_predikat')
     {
+        $score = ceil($score);
         foreach ($predikats as $p) {
             if ($score >= $p['min_nilai'] && $score <= $p['max_nilai']) {
                 return $p[$field] ?? '-';

@@ -163,23 +163,23 @@
                                             <?php if ($maxJuri > 1): ?>
                                                 <?php for($j=0; $j<$maxJuri; $j++): ?>
                                                     <?php $val = $raws[$j] ?? '-'; ?>
-                                                    <td class="text-center text-muted"><?= $val ?></td>
+                                                    <td class="text-center text-muted"><?= is_numeric($val) ? round($val, 0) : $val ?></td>
                                                 <?php endfor; ?>
                                                 <!-- Rata-rata -->
                                                 <td class="text-center font-weight-bold bg-light" style="background-color:#f9f9f9">
-                                                    <?= round($kRes['avg'], 1) ?>
+                                                    <?= number_format($kRes['avg'], 1) ?>
                                                 </td>
                                             <?php else: ?>
                                                 <!-- Nilai Tunggal -->
                                                 <td class="text-center">
-                                                    <?= !empty($raws) ? $raws[0] : '-' ?>
+                                                    <?= !empty($raws) ? (is_numeric($raws[0]) ? round($raws[0], 0) : $raws[0]) : '-' ?>
                                                 </td>
                                             <?php endif; ?>
                                             
                                             <!-- Render Bobot -->
                                             <?php if(!$isPengurangan): ?>
                                                 <td class="text-center font-weight-bold text-primary">
-                                                    <?= floatval($kRes['bb']) > 0 ? round($kRes['bb'], 1) : '-' ?>
+                                                    <?= floatval($kRes['bb']) > 0 ? number_format($kRes['bb'], 1) : '-' ?>
                                                 </td>
                                             <?php endif; ?>
                                             
@@ -187,17 +187,17 @@
                                         
                                         <!-- Sel Subtotal -->
                                         <td class="text-center font-weight-bold text-orange">
-                                            <?= round($mRes['subtotal'], 1) ?>
+                                            <?= number_format($mRes['subtotal'], 1) ?>
                                         </td>
                                         
                                     <?php endforeach; // Akhir Loop Materi ?>
 
                                     <!-- Kolom Grand Total -->
                                     <td class="text-center font-weight-bold text-success" style="font-size:1.1em">
-                                        <?= round($pData['grand_total'] ?? 0, 1) ?>
+                                        <?= number_format($pData['grand_total'] ?? 0, 1) ?>
                                     </td>
                                     <td class="text-center">
-                                        <?= round($pData['rata_rata'] ?? 0, 1) ?>
+                                        <?= number_format($pData['rata_rata'] ?? 0, 1) ?>
                                     </td>
                                     <td class="text-center">
                                         <?php 

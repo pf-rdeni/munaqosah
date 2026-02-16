@@ -39,13 +39,15 @@
                         TableBlock --> SaveConfig
                         
                         SaveConfig --> CetakPage[3. Halaman Cetak Sertifikat]
-                        CetakPage --> Filter[Filter Peserta / Kelas]
-                        Filter --> Preview[Preview Data]
+                        CetakPage --> Filter["Search Filter"]
+                        Filter --> Preview["Preview Data"]
                         
-                        Preview -->|Cetak Satu| GenPDF[Generate PDF]
-                        Preview -->|Cetak Semua| GenZip[Generate PDF Batch / Zip]
+                        Preview -->|Cetak Admin| GenPDF["Generate PDF (Admin)"]
+                        Preview -->|Cetak Semua| GenZip["Generate PDF Batch / Zip"]
+                        Preview -->|Bagikan| Share["Kirim via WhatsApp / Copy Link"]
                         
-                        GenPDF --> Download([Download / Print])
+                        GenPDF --> Download(["Download / Print"])
+                        Share --> PublicAccess(["Wali Murid Download (No Login)"])
                 </div>
                 
                 <div class="mt-4">
@@ -53,7 +55,7 @@
                     <ol>
                         <li><strong>Upload Template:</strong> Siapkan desain sertifikat kosong (tanpa nama/nilai) dalam format JPG/PNG. Upload di menu <em>Pengaturan Sertifikat</em>.</li>
                         <li><strong>Mapping Layout:</strong> Tentukan posisi (koordinat X, Y) untuk setiap data yang akan dicetak (Nama, NISN, Nilai).</li>
-                        <li><strong>Cetak:</strong> Masuk ke menu <em>Cetak Sertifikat</em>, pilih peserta, dan sistem akan menempelkan data ke atas template gambar menjadi PDF.</li>
+                        <li><strong>Cetak & Bagikan:</strong> Masuk ke menu <em>Cetak Sertifikat</em>. Administrator dapat mencetak PDF (fisik) atau <strong>membagikan link download</strong> langsung ke wali murid via WhatsApp (tanpa login).</li>
                     </ol>
                 </div>
             </div>
@@ -102,38 +104,46 @@
             </div>
         </div>
 
-        <!-- Technical Info -->
-        <div class="card card-outline card-danger">
+
+
+    </div>
+
+        <!-- Fitur Baru (v1.1) -->
+        <div class="card card-outline card-success">
             <div class="card-header">
-                <h3 class="card-title">Informasi Teknis (Untuk Developer)</h3>
+                <h3 class="card-title">Fitur Baru & Pembaruan (v1.1)</h3>
             </div>
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3">Library PDF</dt>
+                    <dt class="col-sm-3">1. Download Publik via WhatsApp</dt>
                     <dd class="col-sm-9">
-                        Menggunakan <strong>Dompdf</strong>. Pastikan ekstensi PHP <code>dom</code>, <code>xml</code>, dan <code>mbstring</code> aktif di server.
-                    </dd>
-
-                    <dt class="col-sm-3">Helper Class</dt>
-                    <dd class="col-sm-9">
-                        <code>app/Helpers/CertificateGenerator.php</code>
-                        <br>
-                        Class ini menangani logika penggabungan gambar template dengan teks menggunakan HTML/CSS absolute positioning sebelum dirender menjadi PDF.
-                    </dd>
-                    
-                    <dt class="col-sm-3">Penanganan Font</dt>
-                    <dd class="col-sm-9">
-                        Dompdf mendukung font standar (Helvetica, Times, Courier). Untuk font kustom, perlu load font file (<code>.ttf</code>) secara manual di konfigurasi Dompdf.
-                    </dd>
-                    
-                    <dt class="col-sm-3">Troubleshooting</dt>
-                    <dd class="col-sm-9">
-                        Jika terjadi error <em>"Class Dompdf\Options not found"</em>:
+                        <p>Kini wali murid dapat mengunduh sertifikat langsung tanpa login melalui link terenkripsi yang dikirim via WhatsApp.</p>
                         <ul>
-                            <li>Pastikan folder <code>vendor</code> diupload lengkap ke server.</li>
-                            <li>Cek file <code>vendor/autoload.php</code> dan <code>vendor/composer/autoload_psr4.php</code> update.</li>
+                            <li><strong>Link Aman:</strong> Menggunakan token HMAC-SHA256 (aman dari manipulasi).</li>
+                            <li><strong>Format Pesan:</strong> Pesan WhatsApp otomatis disusun rapi dengan footer sekolah.</li>
+                            <li><strong>Fitur WhatsApp:</strong> Tombol kirim langsung tersedia di halaman cetak sertifikat.</li>
                         </ul>
                     </dd>
+
+                    <dt class="col-sm-3">2. Pengurutan Peserta (Ranking)</dt>
+                    <dd class="col-sm-9">
+                        <p>Daftar peserta di halaman Cetak Sertifikat otomatis diurutkan berdasarkan prestasi:</p>
+                        <ol>
+                            <li><strong>Nilai Rata-rata Tertinggi</strong> (Prioritas Utama).</li>
+                            <li><strong>Nilai Tahfidz Tertinggi</strong> (Jika rata-rata sama).</li>
+                            <li><strong>Nama Peserta (A-Z)</strong> (Jika kedua nilai di atas sama).</li>
+                        </ol>
+                    </dd>
+
+                    <dt class="col-sm-3">3. Foto Profil & Avatar</dt>
+                    <dd class="col-sm-9">
+                        <ul>
+                            <li><strong>Foto:</strong> Menampilkan foto siswa jika tersedia.</li>
+                            <li><strong>Avatar Otomatis:</strong> Jika foto kosong, sistem membuat avatar inisial (Huruf Depan + Belakang Nama) dengan warna acak.</li>
+                        </ul>
+                    </dd>
+                    
+
                 </dl>
             </div>
         </div>

@@ -18,6 +18,9 @@ $routes->get('logout', 'AuthController::logout');
 // Halaman utama redirect ke login
 $routes->get('/', 'AuthController::login');
 
+// Public Certificate Download (tanpa login)
+$routes->get('sertifikat/(:any)', 'PublicSertifikat::download/$1');
+
 // =====================================================================
 // ROUTE BACKEND (MEMBUTUHKAN LOGIN)
 // =====================================================================
