@@ -157,7 +157,7 @@ class CertificateGenerator
 
     protected function getContainerHtml($template, $content, $isBack)
     {
-        $templatePath = FCPATH . 'uploads/' . $template['file_template'];
+        $templatePath = FCPATH . 'writable' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sertifikat' . DIRECTORY_SEPARATOR . $template['file_template'];
         $width = $template['width'];
         $height = $template['height'];
 
@@ -604,7 +604,7 @@ class CertificateGenerator
     protected function buildHtml()
     {
         // New schema: file_template
-        $templatePath = FCPATH . 'uploads/' . $this->template['file_template'];
+        $templatePath = FCPATH . 'writable' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sertifikat' . DIRECTORY_SEPARATOR . $this->template['file_template'];
         // New schema: width, height
         $width = $this->template['width'];
         $height = $this->template['height'];

@@ -71,9 +71,8 @@ class SertifikatTemplateModel extends Model
      */
     public function deleteTemplate($id)
     {
-        $template = $this->find($id);
         if ($template && !empty($template['file_template'])) {
-            $filePath = FCPATH . 'uploads/' . $template['file_template'];
+            $filePath = FCPATH . 'writable' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sertifikat' . DIRECTORY_SEPARATOR . $template['file_template'];
             if (file_exists($filePath)) {
                 unlink($filePath);
             }

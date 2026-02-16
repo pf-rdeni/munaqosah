@@ -89,8 +89,10 @@ class Sertifikat extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'File harus berformat JPG atau PNG']);
         }
 
-        // Create upload directory if not exists
-        $uploadPath = FCPATH . 'uploads/sertifikat/';
+        // Determine upload path safely
+        $uploadPath = FCPATH . 'writable' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'sertifikat' . DIRECTORY_SEPARATOR;
+        
+        // Ensure directory exists
         if (!is_dir($uploadPath)) {
             mkdir($uploadPath, 0755, true);
         }
@@ -114,7 +116,7 @@ class Sertifikat extends BaseController
                 
                 // 1. Delete old physical file
                 if (!empty($existingTemplate['file_template'])) {
-                    $oldFilePath = FCPATH . 'uploads/' . $existingTemplate['file_template'];
+                    $oldFilePath = $uploadPath . $existingTemplate['file_template']; // Use new path
                     if (file_exists($oldFilePath)) {
                         unlink($oldFilePath);
                     }
@@ -122,7 +124,7 @@ class Sertifikat extends BaseController
 
                 // 2. Prepare update data
                 $updateData = [
-                    'file_template' => 'sertifikat/' . $newName,
+                    'file_template' => $newName, // Store only filename
                     'width' => $width,
                     'height' => $height,
                     'orientation' => $orientation,
@@ -141,7 +143,7 @@ class Sertifikat extends BaseController
                 // INSERT new record
                 $data = [
                     'halaman' => $halaman,
-                    'file_template' => 'sertifikat/' . $newName,
+                    'file_template' => $newName, // Store only filename
                     'width' => $width,
                     'height' => $height,
                     'orientation' => $orientation,

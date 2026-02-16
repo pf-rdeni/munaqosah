@@ -19,7 +19,7 @@
                                     <div class="card-body text-center">
                                         <?php if ($template_depan): ?>
                                             <div class="mb-3">
-                                                <img src="<?= base_url('uploads/' . $template_depan['file_template']) ?>" 
+                                                <img src="<?= base_url('writable/uploads/sertifikat/' . $template_depan['file_template']) ?>" 
                                                      class="img-fluid border" 
                                                      style="max-height: 200px;">
                                                 <p class="mt-2 text-muted">
@@ -58,7 +58,7 @@
                                     <div class="card-body text-center">
                                         <?php if ($template_belakang): ?>
                                             <div class="mb-3">
-                                                <img src="<?= base_url('uploads/' . $template_belakang['file_template']) ?>" 
+                                                <img src="<?= base_url('writable/uploads/sertifikat/' . $template_belakang['file_template']) ?>" 
                                                      id="preview-belakang"
                                                      class="img-fluid border" 
                                                      style="max-height: 200px;">
@@ -223,7 +223,7 @@ function updateDesignStyle(templateId, style) {
             var configUrl = '#'; // Disable if no template
             
             if (tmpl && tmpl.file_template) {
-                imgUrl = '<?= base_url('uploads/') ?>' + tmpl.file_template;
+                imgUrl = '<?= base_url('writable/uploads/sertifikat/') ?>' + tmpl.file_template;
                 infoText = tmpl.width + ' x ' + tmpl.height + ' px';
                 configUrl = '<?= base_url('backend/sertifikat/configure/') ?>' + tmpl.id; // Use ID explicitly
             }
