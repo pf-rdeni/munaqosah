@@ -128,7 +128,7 @@
 </section>
 
 <input type="hidden" id="templateId" value="<?= $template['id'] ?>">
-<input type="hidden" id="templatePath" value="<?= base_url('uploads/' . $template['file_template']) ?>">
+<input type="hidden" id="templatePath" value="<?= base_url('writable/uploads/sertifikat/' . $template['file_template']) ?>">
 
 <?= $this->endSection(); ?>
 
