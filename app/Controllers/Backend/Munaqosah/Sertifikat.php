@@ -196,8 +196,8 @@ class Sertifikat extends BaseController
             } else {
                 // If it doesn't exist, we should probably create a placeholder record?
                 // Or just creating it with no file.
-                // Let's create a placeholder record so ID exists for configuration/upload
-                $this->templateModel->insert([
+                // INSERT placeholder
+                $inserted = $this->templateModel->skipValidation(true)->insert([
                     'halaman' => 'belakang',
                     'design_style' => $style,
                     'is_active' => 1,
@@ -206,6 +206,11 @@ class Sertifikat extends BaseController
                     'height' => 0,
                     'orientation' => 'landscape' // Default
                 ]);
+
+                if (!$inserted) {
+                    throw new \Exception('Gagal membuat template placeholder: ' . implode(', ', $this->templateModel->errors()));
+                }
+
                 $message = 'Desain Opsi ' . $style . ' diaktifkan. Silakan upload template.';
             }
 
