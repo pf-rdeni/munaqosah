@@ -98,7 +98,9 @@
                                 <!-- Foto Column -->
                                 <td class="text-center align-middle">
                                     <?php if (!empty($p['foto']) && file_exists(FCPATH . $p['foto'])): ?>
-                                        <img src="<?= base_url($p['foto']) ?>" class="img-circle elevation-1" style="width: 35px; height: 35px; object-fit: cover;">
+                                        <a href="javascript:void(0)" onclick="showPhotoModal('<?= base_url($p['foto']) ?>', '<?= esc($p['nama_siswa']) ?>')">
+                                            <img src="<?= base_url($p['foto']) ?>" class="img-circle elevation-1" style="width: 35px; height: 35px; object-fit: cover;">
+                                        </a>
                                     <?php else: 
                                         // Generate Avatar: 2 chars (Belakang + Depan)
                                         $names = explode(' ', trim($p['nama_siswa']));
@@ -157,6 +159,24 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Photo -->
+    <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" aria-labelledby="modalPhotoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg text-center" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPhotoLabel">Foto Peserta</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="img-photo-large" src="" class="img-fluid" alt="Foto Besar">
+                    <h4 class="mt-2" id="photo-name"></h4>
                 </div>
             </div>
         </div>
@@ -224,5 +244,11 @@
             window.open(url, '_blank');
         });
     });
+
+    function showPhotoModal(src, name) {
+        $('#img-photo-large').attr('src', src);
+        $('#photo-name').text(name);
+        $('#modalPhoto').modal('show');
+    }
 </script>
 <?= $this->endSection(); ?>
